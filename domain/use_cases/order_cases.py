@@ -49,7 +49,8 @@ class CreateOrderUseCase:
         delivery_method: DeliveryMethod,
         current_dt: datetime,
         delivery_address: Address | None = None,
-        spend_points: int = 0
+        spend_points: int = 0,
+        scheduled_time: datetime | None = None
     ) -> Order:
         if cart.is_empty():
             raise ValueError("Cart is empty")
@@ -67,6 +68,11 @@ class CreateOrderUseCase:
 
         # 1. Validate Outlet status
         outlet.validate_can_order(current_dt)
+        if scheduled_time:
+            if scheduled_time < current_dt:
+                raise ValueError("Scheduled time cannot be in the past")
+            if not outlet.can_accept_orders(scheduled_time):
+                raise ValueError("Outlet cannot accept orders at the scheduled time")
 
         # 2. Validate Delivery Address
         if delivery_method == DeliveryMethod.DELIVERY:
@@ -116,7 +122,8 @@ class CreateOrderUseCase:
             outlet_id=cart.outlet_id,
             items=order_items,
             delivery_method=delivery_method,
-            delivery_address=delivery_address
+            delivery_address=delivery_address,
+            scheduled_time=scheduled_time
         )
 
         # Calculate raw total early to validate loyalty limit

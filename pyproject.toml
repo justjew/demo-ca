@@ -1,6 +1,6 @@
 [project]
 name = "demo-ca"
-version = "0.1.0"
+version = "0.5.0"
 description = "Clean Architecture domain business layer"
 readme = "README.md"
 requires-python = ">=3.11"

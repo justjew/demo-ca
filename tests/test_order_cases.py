@@ -461,3 +461,75 @@ def test_create_order_with_price_overrides(create_order_use_case, outlet_repo_mo
     # Total should be 150 (product override) + 20 (modifier override) = 170
     assert order.items[0].price.amount == 170
     assert order.total_amount.amount == 170
+
+def test_create_order_with_scheduled_time_success(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, order_repo_mock, event_dispatcher_mock, monkeypatch):
+    from datetime import timedelta
+    client_id = uuid.uuid4()
+    product_id = uuid.uuid4()
+    cart_item = CartItem(product_id=product_id, quantity=1)
+    cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
+    
+    outlet_mock = MagicMock(spec=Outlet)
+    outlet_mock.company_id = uuid.uuid4()
+    outlet_mock.is_product_available.return_value = True
+    outlet_mock.can_accept_orders.return_value = True
+    outlet_repo_mock.get_by_id.return_value = outlet_mock
+    
+    company_mock = MagicMock(spec=Company)
+    company_repo_mock.get_by_id.return_value = company_mock
+    
+    product_mock = MagicMock(spec=Product)
+    product_mock.modifier_groups = []
+    product_repo_mock.get_by_id.return_value = product_mock
+    
+    unit_price = Money(amount=100, currency="USD")
+    calculate_order_item_price_mock = MagicMock(return_value=unit_price)
+    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_order_item_price', calculate_order_item_price_mock)
+    
+    current_dt = datetime.now()
+    scheduled_time = current_dt + timedelta(hours=2)
+    
+    order = create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)
+    
+    assert order.scheduled_time == scheduled_time
+    outlet_mock.can_accept_orders.assert_any_call(scheduled_time)
+    order_repo_mock.save.assert_called_once_with(order)
+
+def test_create_order_scheduled_time_in_past(create_order_use_case, outlet_repo_mock, company_repo_mock):
+    from datetime import timedelta
+    client_id = uuid.uuid4()
+    cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
+    cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
+    
+    outlet_mock = MagicMock(spec=Outlet)
+    outlet_mock.company_id = uuid.uuid4()
+    outlet_repo_mock.get_by_id.return_value = outlet_mock
+    
+    company_mock = MagicMock(spec=Company)
+    company_repo_mock.get_by_id.return_value = company_mock
+    
+    current_dt = datetime.now()
+    scheduled_time = current_dt - timedelta(hours=1)
+    
+    with pytest.raises(ValueError, match="Scheduled time cannot be in the past"):
+        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)
+
+def test_create_order_scheduled_time_outlet_closed(create_order_use_case, outlet_repo_mock, company_repo_mock):
+    from datetime import timedelta
+    client_id = uuid.uuid4()
+    cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
+    cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
+    
+    outlet_mock = MagicMock(spec=Outlet)
+    outlet_mock.company_id = uuid.uuid4()
+    outlet_mock.can_accept_orders.return_value = False
+    outlet_repo_mock.get_by_id.return_value = outlet_mock
+    
+    company_mock = MagicMock(spec=Company)
+    company_repo_mock.get_by_id.return_value = company_mock
+    
+    current_dt = datetime.now()
+    scheduled_time = current_dt + timedelta(hours=2)
+    
+    with pytest.raises(ValueError, match="Outlet cannot accept orders at the scheduled time"):
+        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)

@@ -11,7 +11,7 @@ This project demonstrates the business logic layer of a restaurant platform impl
 ## Features Implemented
 - **Organizational Structure**: Supports hierarchical modeling of `Company` and its subordinate `Outlet`s (physical locations). Each outlet has individual schedules, coverage zones, and order-taking status.
 - **Catalog Management**: Groups `Product`s in `Category`s. Features complex `ModifierGroup` rules (min/max selections). Prices and assortment can be overridden globally (Company level) or locally (Outlet level), alongside instantaneous "Stop-lists" for sold-out items.
-- **Order Lifecycle**: Handles cart validation, checks delivery availability, enforces modifier boundaries, calculates order totals, processes loyalty points deductions.
+- **Order Lifecycle**: Handles cart validation, checks delivery availability (including scheduled/desired times), enforces modifier boundaries, calculates order totals, processes loyalty points deductions.
 - **Loyalty System**: Single profile per customer inside a company. Features dynamic **Loyalty Levels** based on the total amount a customer has historically spent, adjusting the point accrual percentage accordingly.
 - **External Integrations**: Includes use cases to handle events from aggregator gateways (`AcceptExternalOrderUseCase`), triggering dispatch of couriers via logistics gateways upon order readiness, and processing transactions and printing receipts through payment and fiscal gateways (`ProcessPaymentUseCase`).
 

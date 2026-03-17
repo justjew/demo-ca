@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from ..exceptions import EmptyCartError, InvalidStateTransitionError
 from ..value_objects import Address, DeliveryMethod, Money, OrderStatus
@@ -40,6 +41,7 @@ class Order(Entity):
     status: OrderStatus = OrderStatus.CREATED
 
     delivery_address: Address | None = None
+    scheduled_time: datetime | None = None
     applied_loyalty_points: int = 0
     total_amount: Money | None = None # Calculated total including points deduction
 
