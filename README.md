@@ -20,6 +20,8 @@ The codebase follows the hexagonal architecture (Ports & Adapters) pattern:
 - **Strict Isolation**: The domain layer has no knowledge of Django or the database.
 - **Framework Agnostic**: The web and DB layers are isolated in `adapters/`, making it easy to swap them for FastAPI or SQLAlchemy.
 - **Advanced Pricing**: Supports outlet-specific price overrides and complex modifier rules.
+- **Unified CRUD Engine**: Standardized Create, Read, Update, Delete, and List operations for all primary entities (`Client`, `Company`, `Outlet`, `Product`).
+- **Generic Architecture**: Utilizes a highly reusable generic CRUD layer (`CrudUseCase`, `CrudViewSet`) that minimizes boilerplate while enforcing strict domain isolation.
 - **Modifier Management**: API endpoints for dynamic configuration of product modifiers.
 - **Loyalty System**: Multi-tier loyalty levels based on historical customer spend, with dedicated accrual calculation endpoints.
 - **External Integrations**: Support for accepting and processing orders from third-party platforms.

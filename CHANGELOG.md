@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-18
+
+### Added
+- **Unified CRUD APIs**: Implemented standardized Create, Read, Update, Delete, and List (with pagination) endpoints for `Client`, `Company`, `Outlet`, and `Product` entities.
+- **Generic Boilerplate Reduction**: Refactored the CRUD architecture using generic base classes (`ICrudRepository`, `CrudUseCase`, `CrudViewSet`), reducing repetitive code by ~200 lines while maintaining strict Clean Architecture boundaries.
+- **Standardized Pagination**: Integrated limit/offset pagination across all entity list views within the business logic layer.
+
 ## [0.7.0] - 2026-03-18
 
 ### Added
