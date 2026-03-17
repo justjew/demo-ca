@@ -23,50 +23,66 @@ from domain.value_objects import Address, DeliveryMethod, Money, OrderStatus
 def order_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def outlet_repo_mock():
     return MagicMock()
+
 
 @pytest.fixture
 def product_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def client_repo_mock():
     return MagicMock()
+
 
 @pytest.fixture
 def company_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def event_dispatcher_mock():
     return MagicMock()
 
+
 @pytest.fixture
-def create_order_use_case(order_repo_mock, outlet_repo_mock, product_repo_mock, client_repo_mock, company_repo_mock, event_dispatcher_mock):
+def create_order_use_case(
+    order_repo_mock,
+    outlet_repo_mock,
+    product_repo_mock,
+    client_repo_mock,
+    company_repo_mock,
+    event_dispatcher_mock,
+):
     return CreateOrderUseCase(
         order_repo=order_repo_mock,
         outlet_repo=outlet_repo_mock,
         product_repo=product_repo_mock,
         client_repo=client_repo_mock,
         company_repo=company_repo_mock,
-        event_dispatcher=event_dispatcher_mock
+        event_dispatcher=event_dispatcher_mock,
     )
+
 
 @pytest.fixture
 def change_status_use_case(order_repo_mock, event_dispatcher_mock):
     # Mock LogisticsGateway for testing
     from domain.interfaces.gateways import ILogisticsGateway
+
     logistics_gateway_mock = MagicMock(spec=ILogisticsGateway)
     logistics_gateway_mock.request_courier.return_value = "TRK-12345"
 
     use_case = ChangeOrderStatusUseCase(
         order_repo=order_repo_mock,
         event_dispatcher=event_dispatcher_mock,
-        logistics_gateway=logistics_gateway_mock
+        logistics_gateway=logistics_gateway_mock,
     )
     return use_case
+
 
 @pytest.fixture
 def process_payment_use_case(order_repo_mock, event_dispatcher_mock):
@@ -83,20 +99,23 @@ def process_payment_use_case(order_repo_mock, event_dispatcher_mock):
         order_repo=order_repo_mock,
         payment_gateway=payment_gateway_mock,
         fiscal_gateway=fiscal_gateway_mock,
-        event_dispatcher=event_dispatcher_mock
+        event_dispatcher=event_dispatcher_mock,
     )
     return use_case
+
 
 def test_create_order_empty_cart(create_order_use_case):
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[])
     with pytest.raises(ValueError, match="Cart is empty"):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
+
 def test_create_order_missing_client_id(create_order_use_case):
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=None, outlet_id=uuid.uuid4(), items=[cart_item])
     with pytest.raises(ValueError, match="Client ID is required for order creation"):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
+
 
 def test_create_order_outlet_not_found(create_order_use_case, outlet_repo_mock):
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
@@ -106,7 +125,10 @@ def test_create_order_outlet_not_found(create_order_use_case, outlet_repo_mock):
     with pytest.raises(ValueError, match="Outlet not found"):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_company_not_found(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_company_not_found(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
 
@@ -119,7 +141,10 @@ def test_create_order_company_not_found(create_order_use_case, outlet_repo_mock,
     with pytest.raises(ValueError, match="Company not found"):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_delivery_address_missing(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_delivery_address_missing(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
 
@@ -133,7 +158,10 @@ def test_create_order_delivery_address_missing(create_order_use_case, outlet_rep
     with pytest.raises(ValueError, match="Delivery address is required for delivery"):
         create_order_use_case.execute(cart, DeliveryMethod.DELIVERY, datetime.now())
 
-def test_create_order_delivery_not_available(create_order_use_case, outlet_repo_mock, company_repo_mock, monkeypatch):
+
+def test_create_order_delivery_not_available(
+    create_order_use_case, outlet_repo_mock, company_repo_mock, monkeypatch
+):
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
 
@@ -147,12 +175,22 @@ def test_create_order_delivery_not_available(create_order_use_case, outlet_repo_
     address = Address(city="Test City", street="Test St", building="1A")
 
     is_address_covered_mock = MagicMock(return_value=False)
-    monkeypatch.setattr('domain.services.delivery_service.DeliveryService.is_address_covered', is_address_covered_mock)
+    monkeypatch.setattr(
+        "domain.services.delivery_service.DeliveryService.is_address_covered",
+        is_address_covered_mock,
+    )
 
-    with pytest.raises(DeliveryNotAvailableError, match="Address is outside delivery zone"):
-        create_order_use_case.execute(cart, DeliveryMethod.DELIVERY, datetime.now(), delivery_address=address)
+    with pytest.raises(
+        DeliveryNotAvailableError, match="Address is outside delivery zone"
+    ):
+        create_order_use_case.execute(
+            cart, DeliveryMethod.DELIVERY, datetime.now(), delivery_address=address
+        )
 
-def test_create_order_product_in_stop_list(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_product_in_stop_list(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
@@ -165,13 +203,22 @@ def test_create_order_product_in_stop_list(create_order_use_case, outlet_repo_mo
     company_mock = MagicMock(spec=Company)
     company_repo_mock.get_by_id.return_value = company_mock
 
-    with pytest.raises(ProductInStopListError, match=f"Product {product_id} is unavailable"):
+    with pytest.raises(
+        ProductInStopListError, match=f"Product {product_id} is unavailable"
+    ):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_modifier_in_stop_list(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_modifier_in_stop_list(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     product_id = uuid.uuid4()
     modifier_id = uuid.uuid4()
-    cart_item = CartItem(product_id=product_id, quantity=1, selected_modifiers={uuid.uuid4(): [modifier_id]})
+    cart_item = CartItem(
+        product_id=product_id,
+        quantity=1,
+        selected_modifiers={uuid.uuid4(): [modifier_id]},
+    )
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
 
     outlet_mock = MagicMock(spec=Outlet)
@@ -183,10 +230,15 @@ def test_create_order_modifier_in_stop_list(create_order_use_case, outlet_repo_m
     company_mock = MagicMock(spec=Company)
     company_repo_mock.get_by_id.return_value = company_mock
 
-    with pytest.raises(ProductInStopListError, match=f"Modifier {modifier_id} is unavailable"):
+    with pytest.raises(
+        ProductInStopListError, match=f"Modifier {modifier_id} is unavailable"
+    ):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_product_not_found(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock):
+
+def test_create_order_product_not_found(
+    create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock
+):
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
@@ -204,10 +256,15 @@ def test_create_order_product_not_found(create_order_use_case, outlet_repo_mock,
     with pytest.raises(ValueError, match=f"Product {product_id} not found"):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_invalid_modifiers(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock):
+
+def test_create_order_invalid_modifiers(
+    create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock
+):
     product_id = uuid.uuid4()
     group_id = uuid.uuid4()
-    cart_item = CartItem(product_id=product_id, quantity=1, selected_modifiers={group_id: [uuid.uuid4()]})
+    cart_item = CartItem(
+        product_id=product_id, quantity=1, selected_modifiers={group_id: [uuid.uuid4()]}
+    )
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
 
     outlet_mock = MagicMock(spec=Outlet)
@@ -227,10 +284,22 @@ def test_create_order_invalid_modifiers(create_order_use_case, outlet_repo_mock,
     product_mock.modifier_groups = [group_mock]
     product_repo_mock.get_by_id.return_value = product_mock
 
-    with pytest.raises(InvalidModifierError, match=f"Modifier constraints violated for group {group_mock.name}"):
+    with pytest.raises(
+        InvalidModifierError,
+        match=f"Modifier constraints violated for group {group_mock.name}",
+    ):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_success(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, order_repo_mock, event_dispatcher_mock, monkeypatch):
+
+def test_create_order_success(
+    create_order_use_case,
+    outlet_repo_mock,
+    company_repo_mock,
+    product_repo_mock,
+    order_repo_mock,
+    event_dispatcher_mock,
+    monkeypatch,
+):
     client_id = uuid.uuid4()
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=2)
@@ -250,7 +319,10 @@ def test_create_order_success(create_order_use_case, outlet_repo_mock, company_r
 
     unit_price = Money(amount=100, currency="USD")
     calculate_order_item_price_mock = MagicMock(return_value=unit_price)
-    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_order_item_price', calculate_order_item_price_mock)
+    monkeypatch.setattr(
+        "domain.services.pricing_service.PricingService.calculate_order_item_price",
+        calculate_order_item_price_mock,
+    )
 
     current_dt = datetime.now()
 
@@ -268,7 +340,15 @@ def test_create_order_success(create_order_use_case, outlet_repo_mock, company_r
     assert event.order_id == order.id
     assert event.total_amount == 200
 
-def test_create_order_spend_points_success(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, client_repo_mock, monkeypatch):
+
+def test_create_order_spend_points_success(
+    create_order_use_case,
+    outlet_repo_mock,
+    company_repo_mock,
+    product_repo_mock,
+    client_repo_mock,
+    monkeypatch,
+):
     client_id = uuid.uuid4()
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=2)
@@ -288,26 +368,42 @@ def test_create_order_spend_points_success(create_order_use_case, outlet_repo_mo
 
     unit_price = Money(amount=100, currency="USD")
     calculate_order_item_price_mock = MagicMock(return_value=unit_price)
-    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_order_item_price', calculate_order_item_price_mock)
+    monkeypatch.setattr(
+        "domain.services.pricing_service.PricingService.calculate_order_item_price",
+        calculate_order_item_price_mock,
+    )
 
     profile_mock = MagicMock(spec=LoyaltyProfile)
     client_repo_mock.get_loyalty_profile.return_value = profile_mock
 
     calculate_max_loyalty_discount_mock = MagicMock(return_value=50)
-    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_max_loyalty_discount', calculate_max_loyalty_discount_mock)
+    monkeypatch.setattr(
+        "domain.services.pricing_service.PricingService.calculate_max_loyalty_discount",
+        calculate_max_loyalty_discount_mock,
+    )
 
     current_dt = datetime.now()
 
-    order = create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, spend_points=100)
+    order = create_order_use_case.execute(
+        cart, DeliveryMethod.PICKUP, current_dt, spend_points=100
+    )
 
     # max discount is 50, so point spend is capped at 50
     assert order.applied_loyalty_points == 50
-    assert order.total_amount.amount == 150 # 200 total - 50 discount
+    assert order.total_amount.amount == 150  # 200 total - 50 discount
 
     profile_mock.spend_points.assert_called_once_with(50)
     client_repo_mock.save_loyalty_profile.assert_called_once_with(profile_mock)
 
-def test_create_order_insufficient_points(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, client_repo_mock, monkeypatch):
+
+def test_create_order_insufficient_points(
+    create_order_use_case,
+    outlet_repo_mock,
+    company_repo_mock,
+    product_repo_mock,
+    client_repo_mock,
+    monkeypatch,
+):
     client_id = uuid.uuid4()
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=2)
@@ -327,15 +423,24 @@ def test_create_order_insufficient_points(create_order_use_case, outlet_repo_moc
 
     unit_price = Money(amount=100, currency="USD")
     calculate_order_item_price_mock = MagicMock(return_value=unit_price)
-    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_order_item_price', calculate_order_item_price_mock)
+    monkeypatch.setattr(
+        "domain.services.pricing_service.PricingService.calculate_order_item_price",
+        calculate_order_item_price_mock,
+    )
 
     client_repo_mock.get_loyalty_profile.return_value = None
 
-    with pytest.raises(InsufficientPointsError, match="Client has no profile for this company"):
-        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now(), spend_points=10)
+    with pytest.raises(
+        InsufficientPointsError, match="Client has no profile for this company"
+    ):
+        create_order_use_case.execute(
+            cart, DeliveryMethod.PICKUP, datetime.now(), spend_points=10
+        )
 
 
-def test_change_order_status_success(change_status_use_case, order_repo_mock, event_dispatcher_mock):
+def test_change_order_status_success(
+    change_status_use_case, order_repo_mock, event_dispatcher_mock
+):
     order_id = uuid.uuid4()
     order_mock = MagicMock(spec=Order)
     order_mock.id = order_id
@@ -355,21 +460,27 @@ def test_change_order_status_success(change_status_use_case, order_repo_mock, ev
     assert event.old_status == OrderStatus.CREATED
     assert event.new_status == OrderStatus.AWAITING_PAYMENT
 
+
 def test_change_order_status_not_found(change_status_use_case, order_repo_mock):
     order_id = uuid.uuid4()
     order_repo_mock.get_by_id.return_value = None
 
     with pytest.raises(ValueError, match="Order not found"):
-        change_status_use_case.execute(order_id, OrderStatus.AWAITING_PAYMENT, datetime.now())
+        change_status_use_case.execute(
+            order_id, OrderStatus.AWAITING_PAYMENT, datetime.now()
+        )
 
-def test_change_order_status_triggers_logistics(change_status_use_case, order_repo_mock):
+
+def test_change_order_status_triggers_logistics(
+    change_status_use_case, order_repo_mock
+):
     order_id = uuid.uuid4()
     order_mock = Order(
         client_id=uuid.uuid4(),
         outlet_id=uuid.uuid4(),
         items=[],
         delivery_method=DeliveryMethod.DELIVERY,
-        delivery_address=Address(city="Test", street="Test", building="1")
+        delivery_address=Address(city="Test", street="Test", building="1"),
     )
     order_mock.id = order_id
     order_mock.status = OrderStatus.ACCEPTED
@@ -381,18 +492,19 @@ def test_change_order_status_triggers_logistics(change_status_use_case, order_re
 
     assert order_mock.delivery_tracking_id == "TRK-12345"
     change_status_use_case.logistics_gateway.request_courier.assert_called_once_with(
-        order_id,
-        Address(city="", street="", building=""),
-        order_mock.delivery_address
+        order_id, Address(city="", street="", building=""), order_mock.delivery_address
     )
 
-def test_process_payment_success(process_payment_use_case, order_repo_mock, event_dispatcher_mock):
+
+def test_process_payment_success(
+    process_payment_use_case, order_repo_mock, event_dispatcher_mock
+):
     order_id = uuid.uuid4()
     order_mock = Order(
         client_id=uuid.uuid4(),
         outlet_id=uuid.uuid4(),
         items=[],
-        delivery_method=DeliveryMethod.PICKUP
+        delivery_method=DeliveryMethod.PICKUP,
     )
     order_mock.id = order_id
     order_mock.status = OrderStatus.AWAITING_PAYMENT
@@ -406,8 +518,12 @@ def test_process_payment_success(process_payment_use_case, order_repo_mock, even
     assert order.status == OrderStatus.ACCEPTED
     assert order.receipt_id == "REC-999"
 
-    process_payment_use_case.payment_gateway.process_payment.assert_called_once_with(order_id, 500, "USD")
-    process_payment_use_case.fiscal_gateway.generate_receipt.assert_called_once_with(order_mock)
+    process_payment_use_case.payment_gateway.process_payment.assert_called_once_with(
+        order_id, 500, "USD"
+    )
+    process_payment_use_case.fiscal_gateway.generate_receipt.assert_called_once_with(
+        order_mock
+    )
     order_repo_mock.save.assert_called_once_with(order_mock)
 
     event_dispatcher_mock.assert_called_once()
@@ -417,7 +533,9 @@ def test_process_payment_success(process_payment_use_case, order_repo_mock, even
     assert event.new_status == OrderStatus.ACCEPTED
 
 
-def test_create_order_product_not_in_assortment(create_order_use_case, outlet_repo_mock, company_repo_mock):
+def test_create_order_product_not_in_assortment(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=1)
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
@@ -430,15 +548,27 @@ def test_create_order_product_not_in_assortment(create_order_use_case, outlet_re
     company_mock = MagicMock(spec=Company)
     company_repo_mock.get_by_id.return_value = company_mock
 
-    with pytest.raises(ProductInStopListError, match=f"Product {product_id} is not in local assortment"):
+    with pytest.raises(
+        ProductInStopListError, match=f"Product {product_id} is not in local assortment"
+    ):
         create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
 
-def test_create_order_with_price_overrides(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, order_repo_mock, event_dispatcher_mock):
+
+def test_create_order_with_price_overrides(
+    create_order_use_case,
+    outlet_repo_mock,
+    company_repo_mock,
+    product_repo_mock,
+    order_repo_mock,
+    event_dispatcher_mock,
+):
     client_id = uuid.uuid4()
     product_id = uuid.uuid4()
     modifier_id = uuid.uuid4()
     group_id = uuid.uuid4()
-    cart_item = CartItem(product_id=product_id, quantity=1, selected_modifiers={group_id: [modifier_id]})
+    cart_item = CartItem(
+        product_id=product_id, quantity=1, selected_modifiers={group_id: [modifier_id]}
+    )
     cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
 
     outlet = Outlet(company_id=uuid.uuid4(), name="Test Outlet")
@@ -450,9 +580,19 @@ def test_create_order_with_price_overrides(create_order_use_case, outlet_repo_mo
     company_repo_mock.get_by_id.return_value = company_mock
 
     from domain.entities.catalog import ModifierOption
-    modifier_opt = ModifierOption(id=modifier_id, name="Milk", price_adjustment=Money(amount=10, currency="USD"))
+
+    modifier_opt = ModifierOption(
+        id=modifier_id, name="Milk", price_adjustment=Money(amount=10, currency="USD")
+    )
     group = ModifierGroup(id=group_id, name="Addons", options=[modifier_opt])
-    product = Product(id=product_id, name="Coffee", description="", base_price=Money(amount=100, currency="USD"), category_id=uuid.uuid4(), modifier_groups=[group])
+    product = Product(
+        id=product_id,
+        name="Coffee",
+        description="",
+        base_price=Money(amount=100, currency="USD"),
+        category_id=uuid.uuid4(),
+        modifier_groups=[group],
+    )
     product_repo_mock.get_by_id.return_value = product
 
     current_dt = datetime.now()
@@ -462,8 +602,18 @@ def test_create_order_with_price_overrides(create_order_use_case, outlet_repo_mo
     assert order.items[0].price.amount == 170
     assert order.total_amount.amount == 170
 
-def test_create_order_with_scheduled_time_success(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, order_repo_mock, event_dispatcher_mock, monkeypatch):
+
+def test_create_order_with_scheduled_time_success(
+    create_order_use_case,
+    outlet_repo_mock,
+    company_repo_mock,
+    product_repo_mock,
+    order_repo_mock,
+    event_dispatcher_mock,
+    monkeypatch,
+):
     from datetime import timedelta
+
     client_id = uuid.uuid4()
     product_id = uuid.uuid4()
     cart_item = CartItem(product_id=product_id, quantity=1)
@@ -484,19 +634,28 @@ def test_create_order_with_scheduled_time_success(create_order_use_case, outlet_
 
     unit_price = Money(amount=100, currency="USD")
     calculate_order_item_price_mock = MagicMock(return_value=unit_price)
-    monkeypatch.setattr('domain.services.pricing_service.PricingService.calculate_order_item_price', calculate_order_item_price_mock)
+    monkeypatch.setattr(
+        "domain.services.pricing_service.PricingService.calculate_order_item_price",
+        calculate_order_item_price_mock,
+    )
 
     current_dt = datetime.now()
     scheduled_time = current_dt + timedelta(hours=2)
 
-    order = create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)
+    order = create_order_use_case.execute(
+        cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time
+    )
 
     assert order.scheduled_time == scheduled_time
     outlet_mock.can_accept_orders.assert_any_call(scheduled_time)
     order_repo_mock.save.assert_called_once_with(order)
 
-def test_create_order_scheduled_time_in_past(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_scheduled_time_in_past(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     from datetime import timedelta
+
     client_id = uuid.uuid4()
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
@@ -512,10 +671,16 @@ def test_create_order_scheduled_time_in_past(create_order_use_case, outlet_repo_
     scheduled_time = current_dt - timedelta(hours=1)
 
     with pytest.raises(ValueError, match="Scheduled time cannot be in the past"):
-        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)
+        create_order_use_case.execute(
+            cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time
+        )
 
-def test_create_order_scheduled_time_outlet_closed(create_order_use_case, outlet_repo_mock, company_repo_mock):
+
+def test_create_order_scheduled_time_outlet_closed(
+    create_order_use_case, outlet_repo_mock, company_repo_mock
+):
     from datetime import timedelta
+
     client_id = uuid.uuid4()
     cart_item = CartItem(product_id=uuid.uuid4(), quantity=1)
     cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
@@ -531,5 +696,9 @@ def test_create_order_scheduled_time_outlet_closed(create_order_use_case, outlet
     current_dt = datetime.now()
     scheduled_time = current_dt + timedelta(hours=2)
 
-    with pytest.raises(ValueError, match="Outlet cannot accept orders at the scheduled time"):
-        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time)
+    with pytest.raises(
+        ValueError, match="Outlet cannot accept orders at the scheduled time"
+    ):
+        create_order_use_case.execute(
+            cart, DeliveryMethod.PICKUP, current_dt, scheduled_time=scheduled_time
+        )

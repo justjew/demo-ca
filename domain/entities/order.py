@@ -13,6 +13,7 @@ class CartItem(Entity):
     quantity: int
     selected_modifiers: dict[uuid.UUID, list[uuid.UUID]] = field(default_factory=dict)
 
+
 @dataclass(kw_only=True)
 class Cart(Entity):
     client_id: uuid.UUID | None
@@ -21,6 +22,7 @@ class Cart(Entity):
 
     def is_empty(self) -> bool:
         return len(self.items) == 0
+
 
 @dataclass(kw_only=True)
 class OrderItem(Entity):
@@ -31,6 +33,7 @@ class OrderItem(Entity):
 
     def get_total(self) -> Money:
         return self.price * self.quantity
+
 
 @dataclass(kw_only=True)
 class Order(Entity):
@@ -43,7 +46,7 @@ class Order(Entity):
     delivery_address: Address | None = None
     scheduled_time: datetime | None = None
     applied_loyalty_points: int = 0
-    total_amount: Money | None = None # Calculated total including points deduction
+    total_amount: Money | None = None  # Calculated total including points deduction
 
     receipt_id: str | None = None
     delivery_tracking_id: str | None = None
@@ -79,11 +82,13 @@ class Order(Entity):
             OrderStatus.READY: [OrderStatus.TRANSFERRED, OrderStatus.COMPLETED],
             OrderStatus.TRANSFERRED: [OrderStatus.COMPLETED],
             OrderStatus.COMPLETED: [],
-            OrderStatus.CANCELED: []
+            OrderStatus.CANCELED: [],
         }
 
         allowed = valid_transitions.get(self.status, [])
         if new_status not in allowed:
-            raise InvalidStateTransitionError(f"Cannot transition order from {self.status.value} to {new_status.value}")
+            raise InvalidStateTransitionError(
+                f"Cannot transition order from {self.status.value} to {new_status.value}"
+            )
 
         self.status = new_status

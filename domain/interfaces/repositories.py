@@ -17,6 +17,7 @@ class ICompanyRepository(ABC):
     def save(self, company: Company) -> None:
         pass
 
+
 class IOutletRepository(ABC):
     @abstractmethod
     def get_by_id(self, outlet_id: uuid.UUID) -> Outlet | None:
@@ -29,6 +30,7 @@ class IOutletRepository(ABC):
     @abstractmethod
     def save(self, outlet: Outlet) -> None:
         pass
+
 
 class IProductRepository(ABC):
     @abstractmethod
@@ -43,6 +45,7 @@ class IProductRepository(ABC):
     def save(self, product: Product) -> None:
         pass
 
+
 class IOrderRepository(ABC):
     @abstractmethod
     def get_by_id(self, order_id: uuid.UUID) -> Order | None:
@@ -52,13 +55,16 @@ class IOrderRepository(ABC):
     def save(self, order: Order) -> None:
         pass
 
+
 class IClientRepository(ABC):
     @abstractmethod
     def get_by_phone(self, phone: str) -> Client | None:
         pass
 
     @abstractmethod
-    def get_loyalty_profile(self, client_id: uuid.UUID, company_id: uuid.UUID) -> LoyaltyProfile | None:
+    def get_loyalty_profile(
+        self, client_id: uuid.UUID, company_id: uuid.UUID
+    ) -> LoyaltyProfile | None:
         pass
 
     @abstractmethod

@@ -18,11 +18,7 @@ def test_company_repository_save_and_get():
     repo = DjangoCompanyRepository()
 
     company_id = uuid.uuid4()
-    company = Company(
-        id=company_id,
-        name="Test Company",
-        tax_id="12345678"
-    )
+    company = Company(id=company_id, name="Test Company", tax_id="12345678")
 
     # Save
     repo.save(company)
@@ -44,10 +40,7 @@ def test_client_repository_save_and_get():
 
     client_id = uuid.uuid4()
     client = Client(
-        id=client_id,
-        phone_number="+1234567890",
-        first_name="Ivan",
-        last_name="Ivanov"
+        id=client_id, phone_number="+1234567890", first_name="Ivan", last_name="Ivanov"
     )
 
     repo.save_client(client)
@@ -68,7 +61,7 @@ def test_outlet_repository_save_and_get():
         id=outlet_id,
         company_id=company.id,
         name="Main Outlet",
-        is_accepting_orders=True
+        is_accepting_orders=True,
     )
 
     repo.save(outlet)

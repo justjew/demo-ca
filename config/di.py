@@ -8,6 +8,7 @@ from adapters.db.django_orm.repositories import (
     DjangoOutletRepository,
     DjangoProductRepository,
 )
+from domain.entities.order import Order, OrderItem
 from domain.interfaces.gateways import (
     IExternalOrderGateway,
     IFiscalGateway,
@@ -18,25 +19,26 @@ from domain.use_cases.catalog_cases import (
     ConfigureModifiersUseCase,
     ManageStopListUseCase,
 )
-from domain.use_cases.loyalty_cases import CalculateAccrualUseCase
 from domain.use_cases.external_order_cases import AcceptExternalOrderUseCase
+from domain.use_cases.loyalty_cases import CalculateAccrualUseCase
 from domain.use_cases.order_cases import (
     ChangeOrderStatusUseCase,
     CreateOrderUseCase,
     ProcessPaymentUseCase,
 )
-from domain.value_objects import Address, DeliveryMethod, OrderStatus
-from domain.entities.order import Order, OrderItem
-from domain.value_objects import Money
+from domain.value_objects import Address, DeliveryMethod, Money, OrderStatus
 
 
 # Dummy gateways for demonstration
 class DummyLogisticsGateway(ILogisticsGateway):
-    def request_courier(self, order_id: uuid.UUID, pickup_address: Address, dropoff_address: Address) -> str:
+    def request_courier(
+        self, order_id: uuid.UUID, pickup_address: Address, dropoff_address: Address
+    ) -> str:
         return "tracking-123"
 
     def get_delivery_status(self, tracking_id: str) -> str:
         return "DELIVERED"
+
 
 class DummyPaymentGateway(IPaymentGateway):
     def process_payment(self, order_id: uuid.UUID, amount: int, currency: str) -> bool:
@@ -45,9 +47,11 @@ class DummyPaymentGateway(IPaymentGateway):
     def refund_payment(self, order_id: uuid.UUID, amount: int, currency: str) -> bool:
         return True
 
+
 class DummyFiscalGateway(IFiscalGateway):
     def generate_receipt(self, order) -> str:
         return "receipt-123"
+
 
 class DummyExternalOrderGateway(IExternalOrderGateway):
     def parse_incoming_payload(self, payload: dict[str, Any]) -> Order:
@@ -58,25 +62,33 @@ class DummyExternalOrderGateway(IExternalOrderGateway):
                 uuid.UUID(k): [uuid.UUID(uid) for uid in v]
                 for k, v in item_data.get("selected_modifiers", {}).items()
             }
-            items.append(OrderItem(
-                product_id=uuid.UUID(item_data["product_id"]),
-                quantity=item_data["quantity"],
-                price=Money(amount=item_data["price_amount"], currency=item_data["price_currency"]),
-                selected_modifiers=selected_modifiers
-            ))
-        
+            items.append(
+                OrderItem(
+                    product_id=uuid.UUID(item_data["product_id"]),
+                    quantity=item_data["quantity"],
+                    price=Money(
+                        amount=item_data["price_amount"],
+                        currency=item_data["price_currency"],
+                    ),
+                    selected_modifiers=selected_modifiers,
+                )
+            )
+
         address_data = payload.get("delivery_address")
         delivery_address = Address(**address_data) if address_data else None
 
         return Order(
-            client_id=uuid.UUID(payload["client_id"]) if payload.get("client_id") else None,
+            client_id=uuid.UUID(payload["client_id"])
+            if payload.get("client_id")
+            else None,
             outlet_id=uuid.UUID(payload["outlet_id"]),
             items=items,
             delivery_method=DeliveryMethod(payload["delivery_method"]),
             status=OrderStatus.CREATED,
             delivery_address=delivery_address,
-            external_id=payload.get("external_id")
+            external_id=payload.get("external_id"),
         )
+
 
 def dummy_event_dispatcher(event: Any) -> None:
     print(f"Domain Event Dispatched: {event}")
@@ -107,9 +119,7 @@ class Container:
 
     @classmethod
     def get_manage_stop_list_use_case(cls):
-        return ManageStopListUseCase(
-            outlet_repo=cls.get_outlet_repo()
-        )
+        return ManageStopListUseCase(outlet_repo=cls.get_outlet_repo())
 
     @classmethod
     def get_create_order_use_case(cls):
@@ -119,7 +129,7 @@ class Container:
             product_repo=cls.get_product_repo(),
             client_repo=cls.get_client_repo(),
             company_repo=cls.get_company_repo(),
-            event_dispatcher=dummy_event_dispatcher
+            event_dispatcher=dummy_event_dispatcher,
         )
 
     @classmethod
@@ -127,7 +137,7 @@ class Container:
         return ChangeOrderStatusUseCase(
             order_repo=cls.get_order_repo(),
             event_dispatcher=dummy_event_dispatcher,
-            logistics_gateway=DummyLogisticsGateway()
+            logistics_gateway=DummyLogisticsGateway(),
         )
 
     @classmethod
@@ -136,14 +146,12 @@ class Container:
             order_repo=cls.get_order_repo(),
             payment_gateway=DummyPaymentGateway(),
             fiscal_gateway=DummyFiscalGateway(),
-            event_dispatcher=dummy_event_dispatcher
+            event_dispatcher=dummy_event_dispatcher,
         )
 
     @classmethod
     def get_configure_modifiers_use_case(cls):
-        return ConfigureModifiersUseCase(
-            product_repo=cls.get_product_repo()
-        )
+        return ConfigureModifiersUseCase(product_repo=cls.get_product_repo())
 
     @classmethod
     def get_accept_external_order_use_case(cls):
@@ -151,7 +159,7 @@ class Container:
             order_repo=cls.get_order_repo(),
             outlet_repo=cls.get_outlet_repo(),
             external_order_gateway=DummyExternalOrderGateway(),
-            event_dispatcher=dummy_event_dispatcher
+            event_dispatcher=dummy_event_dispatcher,
         )
 
     @classmethod
@@ -160,5 +168,5 @@ class Container:
             order_repo=cls.get_order_repo(),
             client_repo=cls.get_client_repo(),
             company_repo=cls.get_company_repo(),
-            event_dispatcher=dummy_event_dispatcher
+            event_dispatcher=dummy_event_dispatcher,
         )

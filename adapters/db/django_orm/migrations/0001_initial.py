@@ -7,113 +7,233 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='CategoryModel',
+            name="CategoryModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('is_active', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("is_active", models.BooleanField(default=True)),  # type: ignore
             ],
         ),
         migrations.CreateModel(
-            name='ClientModel',
+            name="ClientModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('phone_number', models.CharField(max_length=20, unique=True)),
-                ('first_name', models.CharField(blank=True, max_length=100, null=True)),
-                ('last_name', models.CharField(blank=True, max_length=100, null=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("phone_number", models.CharField(max_length=20, unique=True)),
+                ("first_name", models.CharField(blank=True, max_length=100, null=True)),
+                ("last_name", models.CharField(blank=True, max_length=100, null=True)),
             ],
         ),
         migrations.CreateModel(
-            name='CompanyModel',
+            name="CompanyModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('tax_id', models.CharField(max_length=50)),
-                ('loyalty_levels_data', models.JSONField(blank=True, default=list)),
-                ('max_loyalty_payment_percent', models.FloatField(default=0.5)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("tax_id", models.CharField(max_length=50)),
+                ("loyalty_levels_data", models.JSONField(blank=True, default=list)),
+                ("max_loyalty_payment_percent", models.FloatField(default=0.5)),  # type: ignore
             ],
         ),
         migrations.CreateModel(
-            name='OrderModel',
+            name="OrderModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('delivery_method', models.CharField(max_length=50)),
-                ('status', models.CharField(max_length=50)),
-                ('delivery_address_data', models.JSONField(blank=True, null=True)),
-                ('scheduled_time', models.DateTimeField(blank=True, null=True)),
-                ('applied_loyalty_points', models.IntegerField(default=0)),
-                ('total_amount_amount', models.IntegerField(blank=True, null=True)),
-                ('total_amount_currency', models.CharField(blank=True, max_length=3, null=True)),
-                ('receipt_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('delivery_tracking_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('external_id', models.CharField(blank=True, max_length=100, null=True)),
-                ('client', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to='django_orm.clientmodel')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("delivery_method", models.CharField(max_length=50)),
+                ("status", models.CharField(max_length=50)),
+                ("delivery_address_data", models.JSONField(blank=True, null=True)),
+                ("scheduled_time", models.DateTimeField(blank=True, null=True)),
+                ("applied_loyalty_points", models.IntegerField(default=0)),  # type: ignore
+                ("total_amount_amount", models.IntegerField(blank=True, null=True)),
+                (
+                    "total_amount_currency",
+                    models.CharField(blank=True, max_length=3, null=True),
+                ),
+                ("receipt_id", models.CharField(blank=True, max_length=100, null=True)),
+                (
+                    "delivery_tracking_id",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "external_id",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "client",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="orders",
+                        to="django_orm.clientmodel",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='OrderItemModel',
+            name="OrderItemModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('product_id', models.UUIDField()),
-                ('quantity', models.IntegerField()),
-                ('price_amount', models.IntegerField()),
-                ('price_currency', models.CharField(default='RUB', max_length=3)),
-                ('selected_modifiers_data', models.JSONField(blank=True, default=dict)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='django_orm.ordermodel')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("product_id", models.UUIDField()),
+                ("quantity", models.IntegerField()),
+                ("price_amount", models.IntegerField()),
+                ("price_currency", models.CharField(default="RUB", max_length=3)),
+                ("selected_modifiers_data", models.JSONField(blank=True, default=dict)),
+                (
+                    "order",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="django_orm.ordermodel",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='OutletModel',
+            name="OutletModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('is_accepting_orders', models.BooleanField(default=True)),
-                ('schedule_data', models.JSONField(blank=True, null=True)),
-                ('product_stop_list', models.JSONField(blank=True, default=list)),
-                ('modifier_stop_list', models.JSONField(blank=True, default=list)),
-                ('local_assortment', models.JSONField(blank=True, null=True)),
-                ('product_price_overrides', models.JSONField(blank=True, default=dict)),
-                ('modifier_price_overrides', models.JSONField(blank=True, default=dict)),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='outlets', to='django_orm.companymodel')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("is_accepting_orders", models.BooleanField(default=True)),  # type: ignore
+                ("schedule_data", models.JSONField(blank=True, null=True)),
+                ("product_stop_list", models.JSONField(blank=True, default=list)),
+                ("modifier_stop_list", models.JSONField(blank=True, default=list)),
+                ("local_assortment", models.JSONField(blank=True, null=True)),
+                ("product_price_overrides", models.JSONField(blank=True, default=dict)),
+                (
+                    "modifier_price_overrides",
+                    models.JSONField(blank=True, default=dict),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="outlets",
+                        to="django_orm.companymodel",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='ordermodel',
-            name='outlet',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='django_orm.outletmodel'),
+            model_name="ordermodel",
+            name="outlet",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, to="django_orm.outletmodel"
+            ),
         ),
         migrations.CreateModel(
-            name='ProductModel',
+            name="ProductModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('base_price_amount', models.IntegerField()),
-                ('base_price_currency', models.CharField(default='RUB', max_length=3)),
-                ('modifier_groups_data', models.JSONField(blank=True, default=list)),
-                ('is_active', models.BooleanField(default=True)),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='django_orm.categorymodel')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                ("base_price_amount", models.IntegerField()),
+                ("base_price_currency", models.CharField(default="RUB", max_length=3)),
+                ("modifier_groups_data", models.JSONField(blank=True, default=list)),
+                ("is_active", models.BooleanField(default=True)),  # type: ignore
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="django_orm.categorymodel",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='LoyaltyProfileModel',
+            name="LoyaltyProfileModel",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('balance', models.IntegerField(default=0)),
-                ('total_spent', models.IntegerField(default=0)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='loyalty_profiles', to='django_orm.clientmodel')),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_orm.companymodel')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("balance", models.IntegerField(default=0)),  # type: ignore
+                ("total_spent", models.IntegerField(default=0)),  # type: ignore
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="loyalty_profiles",
+                        to="django_orm.clientmodel",
+                    ),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_orm.companymodel",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('client', 'company')},
+                "unique_together": {("client", "company")},
             },
         ),
     ]

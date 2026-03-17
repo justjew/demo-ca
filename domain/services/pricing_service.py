@@ -10,14 +10,20 @@ class PricingService:
     """Domain service responsible for complex pricing rules."""
 
     @staticmethod
-    def calculate_order_item_price(product: Product, selected_modifiers: dict[uuid.UUID, list[uuid.UUID]], outlet: Outlet | None = None) -> Money:
+    def calculate_order_item_price(
+        product: Product,
+        selected_modifiers: dict[uuid.UUID, list[uuid.UUID]],
+        outlet: Outlet | None = None,
+    ) -> Money:
         """Calculates the unit price for a given product and its modifiers."""
-        product_override = outlet.product_price_overrides.get(product.id) if outlet else None
+        product_override = (
+            outlet.product_price_overrides.get(product.id) if outlet else None
+        )
         modifier_overrides = outlet.modifier_price_overrides if outlet else None
         return product.calculate_price(
             selected_modifiers,
             product_price_override=product_override,
-            modifier_price_overrides=modifier_overrides
+            modifier_price_overrides=modifier_overrides,
         )
 
     @staticmethod
@@ -26,5 +32,7 @@ class PricingService:
         Calculates the maximum amount (in minor units) that can be paid with loyalty points
         based on the company's rules.
         """
-        max_discount_amount = int(order_total.amount * company.max_loyalty_payment_percent)
+        max_discount_amount = int(
+            order_total.amount * company.max_loyalty_payment_percent
+        )
         return max_discount_amount

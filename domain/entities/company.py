@@ -23,7 +23,9 @@ class Company(Entity):
             return 0.05  # Default fallback
 
         # Sort levels by min_spent_amount descending
-        sorted_levels = sorted(self.loyalty_levels, key=lambda lvl: lvl.min_spent_amount, reverse=True)
+        sorted_levels = sorted(
+            self.loyalty_levels, key=lambda lvl: lvl.min_spent_amount, reverse=True
+        )
         for level in sorted_levels:
             if total_spent >= level.min_spent_amount:
                 return level.accrual_rate

@@ -6,7 +6,12 @@ class LoyaltyService:
     """Domain service for advanced loyalty logic."""
 
     @staticmethod
-    def calculate_accrual(order_total: Money, company: Company, total_spent: int = 0, spent_points: int = 0) -> int:
+    def calculate_accrual(
+        order_total: Money,
+        company: Company,
+        total_spent: int = 0,
+        spent_points: int = 0,
+    ) -> int:
         """
         Calculates how many points should be awarded for an order.
         Usually points are only awarded for the portion of the order paid with actual money.

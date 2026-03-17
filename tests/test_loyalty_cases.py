@@ -15,26 +15,33 @@ from domain.value_objects import Money
 def order_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def client_repo_mock():
     return MagicMock()
+
 
 @pytest.fixture
 def company_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def event_dispatcher_mock():
     return MagicMock()
 
+
 @pytest.fixture
-def use_case(order_repo_mock, client_repo_mock, company_repo_mock, event_dispatcher_mock):
+def use_case(
+    order_repo_mock, client_repo_mock, company_repo_mock, event_dispatcher_mock
+):
     return CalculateAccrualUseCase(
         order_repo=order_repo_mock,
         client_repo=client_repo_mock,
         company_repo=company_repo_mock,
-        event_dispatcher=event_dispatcher_mock
+        event_dispatcher=event_dispatcher_mock,
     )
+
 
 def test_calculate_accrual_order_not_found(use_case, order_repo_mock):
     order_id = uuid.uuid4()
@@ -44,6 +51,7 @@ def test_calculate_accrual_order_not_found(use_case, order_repo_mock):
 
     order_repo_mock.get_by_id.assert_called_once_with(order_id)
     use_case.client_repo.get_loyalty_profile.assert_not_called()
+
 
 def test_calculate_accrual_guest_checkout(use_case, order_repo_mock):
     order_id = uuid.uuid4()
@@ -55,7 +63,10 @@ def test_calculate_accrual_guest_checkout(use_case, order_repo_mock):
 
     use_case.client_repo.get_loyalty_profile.assert_not_called()
 
-def test_calculate_accrual_profile_not_found(use_case, order_repo_mock, client_repo_mock):
+
+def test_calculate_accrual_profile_not_found(
+    use_case, order_repo_mock, client_repo_mock
+):
     order_id = uuid.uuid4()
     order_mock = MagicMock(spec=Order)
     order_mock.client_id = uuid.uuid4()
@@ -66,10 +77,15 @@ def test_calculate_accrual_profile_not_found(use_case, order_repo_mock, client_r
 
     use_case.execute(order_id, datetime.now())
 
-    client_repo_mock.get_loyalty_profile.assert_called_once_with(order_mock.client_id, order_mock.outlet_id)
+    client_repo_mock.get_loyalty_profile.assert_called_once_with(
+        order_mock.client_id, order_mock.outlet_id
+    )
     use_case.company_repo.get_by_id.assert_not_called()
 
-def test_calculate_accrual_company_not_found(use_case, order_repo_mock, client_repo_mock, company_repo_mock):
+
+def test_calculate_accrual_company_not_found(
+    use_case, order_repo_mock, client_repo_mock, company_repo_mock
+):
     order_id = uuid.uuid4()
     order_mock = MagicMock(spec=Order)
     order_mock.client_id = uuid.uuid4()
@@ -87,7 +103,10 @@ def test_calculate_accrual_company_not_found(use_case, order_repo_mock, client_r
     company_repo_mock.get_by_id.assert_called_once_with(profile_mock.company_id)
     use_case.event_dispatcher.assert_not_called()
 
-def test_calculate_accrual_no_total_amount(use_case, order_repo_mock, client_repo_mock, company_repo_mock):
+
+def test_calculate_accrual_no_total_amount(
+    use_case, order_repo_mock, client_repo_mock, company_repo_mock
+):
     order_id = uuid.uuid4()
     order_mock = MagicMock(spec=Order)
     order_mock.client_id = uuid.uuid4()
@@ -105,7 +124,15 @@ def test_calculate_accrual_no_total_amount(use_case, order_repo_mock, client_rep
     use_case.execute(order_id, datetime.now())
     use_case.event_dispatcher.assert_not_called()
 
-def test_calculate_accrual_success(use_case, order_repo_mock, client_repo_mock, company_repo_mock, event_dispatcher_mock, monkeypatch):
+
+def test_calculate_accrual_success(
+    use_case,
+    order_repo_mock,
+    client_repo_mock,
+    company_repo_mock,
+    event_dispatcher_mock,
+    monkeypatch,
+):
     order_id = uuid.uuid4()
     current_dt = datetime.now()
 
@@ -127,11 +154,16 @@ def test_calculate_accrual_success(use_case, order_repo_mock, client_repo_mock, 
 
     # Mocking static method LoyaltyService.calculate_accrual
     calculate_accrual_mock = MagicMock(return_value=100)
-    monkeypatch.setattr('domain.services.loyalty_service.LoyaltyService.calculate_accrual', calculate_accrual_mock)
+    monkeypatch.setattr(
+        "domain.services.loyalty_service.LoyaltyService.calculate_accrual",
+        calculate_accrual_mock,
+    )
 
     use_case.execute(order_id, current_dt)
 
-    calculate_accrual_mock.assert_called_once_with(order_mock.total_amount, company_mock, total_spent=500, spent_points=0)
+    calculate_accrual_mock.assert_called_once_with(
+        order_mock.total_amount, company_mock, total_spent=500, spent_points=0
+    )
     profile_mock.add_points.assert_called_once_with(100)
     assert profile_mock.total_spent == 1500  # 500 + 1000
     client_repo_mock.save_loyalty_profile.assert_called_once_with(profile_mock)
@@ -142,7 +174,15 @@ def test_calculate_accrual_success(use_case, order_repo_mock, client_repo_mock, 
     assert event.points_added == 100
     assert event.order_id == order_id
 
-def test_calculate_accrual_no_points_added(use_case, order_repo_mock, client_repo_mock, company_repo_mock, event_dispatcher_mock, monkeypatch):
+
+def test_calculate_accrual_no_points_added(
+    use_case,
+    order_repo_mock,
+    client_repo_mock,
+    company_repo_mock,
+    event_dispatcher_mock,
+    monkeypatch,
+):
     order_id = uuid.uuid4()
     current_dt = datetime.now()
 
@@ -160,7 +200,10 @@ def test_calculate_accrual_no_points_added(use_case, order_repo_mock, client_rep
     company_repo_mock.get_by_id.return_value = company_mock
 
     calculate_accrual_mock = MagicMock(return_value=0)
-    monkeypatch.setattr('domain.services.loyalty_service.LoyaltyService.calculate_accrual', calculate_accrual_mock)
+    monkeypatch.setattr(
+        "domain.services.loyalty_service.LoyaltyService.calculate_accrual",
+        calculate_accrual_mock,
+    )
 
     use_case.execute(order_id, current_dt)
 
@@ -181,7 +224,7 @@ def test_company_get_loyalty_accrual_rate_for_spent():
     levels = [
         LoyaltyLevel(name="Bronze", min_spent_amount=0, accrual_rate=0.05),
         LoyaltyLevel(name="Silver", min_spent_amount=10000, accrual_rate=0.10),
-        LoyaltyLevel(name="Gold", min_spent_amount=50000, accrual_rate=0.15)
+        LoyaltyLevel(name="Gold", min_spent_amount=50000, accrual_rate=0.15),
     ]
     company = Company(name="Test", tax_id="123", loyalty_levels=levels)
 
@@ -215,6 +258,7 @@ def test_loyalty_service_calculate_accrual():
     # Rate is 0.10, so 1500 * 0.10 = 150 points
 
     order_total = Money(amount=2000, currency="USD")
-    points = LoyaltyService.calculate_accrual(order_total, company, total_spent=15000, spent_points=500)
+    points = LoyaltyService.calculate_accrual(
+        order_total, company, total_spent=15000, spent_points=500
+    )
     assert points == 150
-

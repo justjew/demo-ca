@@ -14,7 +14,7 @@ class AcceptExternalOrderUseCase:
         order_repo: IOrderRepository,
         outlet_repo: IOutletRepository,
         external_order_gateway: IExternalOrderGateway,
-        event_dispatcher: Callable[[Any], None]
+        event_dispatcher: Callable[[Any], None],
     ):
         self.order_repo = order_repo
         self.outlet_repo = outlet_repo
@@ -47,7 +47,7 @@ class AcceptExternalOrderUseCase:
                 order_id=order.id,
                 client_id=order.client_id,
                 outlet_id=order.outlet_id,
-                total_amount=order.total_amount.amount if order.total_amount else 0
+                total_amount=order.total_amount.amount if order.total_amount else 0,
             )
         )
 

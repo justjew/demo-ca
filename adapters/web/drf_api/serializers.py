@@ -9,19 +9,22 @@ class AddressSerializer(serializers.Serializer):
     latitude = serializers.FloatField(required=False, allow_null=True)
     longitude = serializers.FloatField(required=False, allow_null=True)
 
+
 class CartItemSerializer(serializers.Serializer):
     product_id = serializers.UUIDField()
     quantity = serializers.IntegerField(min_value=1)
     selected_modifiers = serializers.DictField(
         child=serializers.ListField(child=serializers.UUIDField()),
         required=False,
-        default=dict
+        default=dict,
     )
+
 
 class CartSerializer(serializers.Serializer):
     client_id = serializers.UUIDField(required=False, allow_null=True)
     outlet_id = serializers.UUIDField()
     items = CartItemSerializer(many=True)
+
 
 class CreateOrderRequestSerializer(serializers.Serializer):
     cart = CartSerializer()
@@ -30,9 +33,11 @@ class CreateOrderRequestSerializer(serializers.Serializer):
     spend_points = serializers.IntegerField(min_value=0, default=0)
     scheduled_time = serializers.DateTimeField(required=False, allow_null=True)
 
+
 class MoneySerializer(serializers.Serializer):
     amount = serializers.IntegerField()
     currency = serializers.CharField()
+
 
 class OrderItemResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -40,17 +45,20 @@ class OrderItemResponseSerializer(serializers.Serializer):
     quantity = serializers.IntegerField()
     price = MoneySerializer()
 
+
 class OrderResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     client_id = serializers.UUIDField(required=False, allow_null=True)
     outlet_id = serializers.UUIDField()
-    status = serializers.CharField(source='status.value')
-    delivery_method = serializers.CharField(source='delivery_method.value')
+    status = serializers.CharField(source="status.value")
+    delivery_method = serializers.CharField(source="delivery_method.value")
     total_amount = MoneySerializer(required=False, allow_null=True)
+
 
 class ChangeOrderStatusRequestSerializer(serializers.Serializer):
     order_id = serializers.UUIDField()
     new_status = serializers.CharField()
+
 
 class ModifierOptionSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -59,6 +67,7 @@ class ModifierOptionSerializer(serializers.Serializer):
     price_currency = serializers.CharField(default="RUB")
     is_available = serializers.BooleanField(default=True)
 
+
 class ModifierGroupSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
@@ -66,6 +75,7 @@ class ModifierGroupSerializer(serializers.Serializer):
     is_required = serializers.BooleanField(default=False)
     min_selections = serializers.IntegerField(default=0)
     max_selections = serializers.IntegerField(default=1)
+
 
 class ConfigureModifiersRequestSerializer(serializers.Serializer):
     group = ModifierGroupSerializer()

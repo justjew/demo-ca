@@ -20,7 +20,7 @@ class CalculateAccrualUseCase:
         order_repo: IOrderRepository,
         client_repo: IClientRepository,
         company_repo: ICompanyRepository,
-        event_dispatcher: Callable[[Any], None]
+        event_dispatcher: Callable[[Any], None],
     ):
         self.order_repo = order_repo
         self.client_repo = client_repo
@@ -39,14 +39,18 @@ class CalculateAccrualUseCase:
         if not profile:
             return
 
-        company = self.company_repo.get_by_id(profile.company_id) # Using profile's reference or resolving via outlet
+        company = self.company_repo.get_by_id(
+            profile.company_id
+        )  # Using profile's reference or resolving via outlet
         if not company:
             return
 
         if order.total_amount is None:
             return
 
-        points_to_add = LoyaltyService.calculate_accrual(order.total_amount, company, total_spent=profile.total_spent, spent_points=0)
+        points_to_add = LoyaltyService.calculate_accrual(
+            order.total_amount, company, total_spent=profile.total_spent, spent_points=0
+        )
         if points_to_add > 0:
             profile.add_points(points_to_add)
             profile.total_spent += order.total_amount.amount
@@ -58,6 +62,6 @@ class CalculateAccrualUseCase:
                     client_id=order.client_id,
                     company_id=profile.company_id,
                     points_added=points_to_add,
-                    order_id=order.id
+                    order_id=order.id,
                 )
             )

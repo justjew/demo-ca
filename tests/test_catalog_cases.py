@@ -14,9 +14,11 @@ from domain.use_cases.catalog_cases import (
 def outlet_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def product_repo_mock():
     return MagicMock()
+
 
 def test_add_product_to_stop_list_success(outlet_repo_mock):
     use_case = ManageStopListUseCase(outlet_repo=outlet_repo_mock)
@@ -32,6 +34,7 @@ def test_add_product_to_stop_list_success(outlet_repo_mock):
     outlet_mock.add_to_product_stop_list.assert_called_once_with(product_id)
     outlet_repo_mock.save.assert_called_once_with(outlet_mock)
 
+
 def test_add_product_to_stop_list_outlet_not_found(outlet_repo_mock):
     use_case = ManageStopListUseCase(outlet_repo=outlet_repo_mock)
     outlet_id = uuid.uuid4()
@@ -43,6 +46,7 @@ def test_add_product_to_stop_list_outlet_not_found(outlet_repo_mock):
 
     outlet_repo_mock.get_by_id.assert_called_once_with(outlet_id)
     outlet_repo_mock.save.assert_not_called()
+
 
 def test_remove_product_from_stop_list_success(outlet_repo_mock):
     use_case = ManageStopListUseCase(outlet_repo=outlet_repo_mock)
@@ -58,6 +62,7 @@ def test_remove_product_from_stop_list_success(outlet_repo_mock):
     outlet_mock.remove_from_product_stop_list.assert_called_once_with(product_id)
     outlet_repo_mock.save.assert_called_once_with(outlet_mock)
 
+
 def test_remove_product_from_stop_list_outlet_not_found(outlet_repo_mock):
     use_case = ManageStopListUseCase(outlet_repo=outlet_repo_mock)
     outlet_id = uuid.uuid4()
@@ -69,6 +74,7 @@ def test_remove_product_from_stop_list_outlet_not_found(outlet_repo_mock):
 
     outlet_repo_mock.get_by_id.assert_called_once_with(outlet_id)
     outlet_repo_mock.save.assert_not_called()
+
 
 def test_add_modifier_group_success(product_repo_mock):
     use_case = ConfigureModifiersUseCase(product_repo=product_repo_mock)
@@ -86,6 +92,7 @@ def test_add_modifier_group_success(product_repo_mock):
     product_repo_mock.get_by_id.assert_called_once_with(product_id)
     assert modifier_group in product_mock.modifier_groups
     product_repo_mock.save.assert_called_once_with(product_mock)
+
 
 def test_add_modifier_group_product_not_found(product_repo_mock):
     use_case = ConfigureModifiersUseCase(product_repo=product_repo_mock)

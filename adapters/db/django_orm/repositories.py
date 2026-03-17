@@ -1,5 +1,6 @@
 import uuid
 from datetime import time
+from typing import Any, cast
 
 from domain.entities.catalog import ModifierGroup, ModifierOption, Product
 from domain.entities.client import Client, LoyaltyProfile
@@ -37,20 +38,27 @@ class DjangoCompanyRepository(ICompanyRepository):
     def get_by_id(self, company_id: uuid.UUID) -> Company | None:
         try:
             model = CompanyModel.objects.get(id=company_id)
-            levels = [LoyaltyLevel(id=uuid.uuid4(), **lvl) for lvl in model.loyalty_levels_data]
+            levels = [
+                LoyaltyLevel(id=uuid.uuid4(), **lvl)
+                for lvl in cast(list[dict[str, Any]], model.loyalty_levels_data)
+            ]
             return Company(
-                id=model.id,
-                name=model.name,
-                tax_id=model.tax_id,
+                id=cast(uuid.UUID, model.id),
+                name=str(model.name),
+                tax_id=str(model.tax_id),
                 loyalty_levels=levels,
-                max_loyalty_payment_percent=model.max_loyalty_payment_percent,
+                max_loyalty_payment_percent=float(model.max_loyalty_payment_percent),
             )
         except CompanyModel.DoesNotExist:
             return None
 
     def save(self, company: Company) -> None:
         levels_data = [
-            {"name": lvl.name, "min_spent_amount": lvl.min_spent_amount, "accrual_rate": lvl.accrual_rate}
+            {
+                "name": lvl.name,
+                "min_spent_amount": lvl.min_spent_amount,
+                "accrual_rate": lvl.accrual_rate,
+            }
             for lvl in company.loyalty_levels
         ]
         CompanyModel.objects.update_or_create(
@@ -81,7 +89,15 @@ class DjangoOutletRepository(IOutletRepository):
         schedule_data = None
         if outlet.schedule:
             schedule_data = {}
-            for day in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]:
+            for day in [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday",
+            ]:
                 wh = getattr(outlet.schedule, day)
                 if wh:
                     schedule_data[day] = {
@@ -89,8 +105,14 @@ class DjangoOutletRepository(IOutletRepository):
                         "close_time": wh.close_time.isoformat(),
                     }
 
-        product_price_overrides = {str(k): {"amount": v.amount, "currency": v.currency} for k, v in outlet.product_price_overrides.items()}
-        modifier_price_overrides = {str(k): {"amount": v.amount, "currency": v.currency} for k, v in outlet.modifier_price_overrides.items()}
+        product_price_overrides = {
+            str(k): {"amount": v.amount, "currency": v.currency}
+            for k, v in outlet.product_price_overrides.items()
+        }
+        modifier_price_overrides = {
+            str(k): {"amount": v.amount, "currency": v.currency}
+            for k, v in outlet.modifier_price_overrides.items()
+        }
 
         OutletModel.objects.update_or_create(
             id=outlet.id,
@@ -101,7 +123,9 @@ class DjangoOutletRepository(IOutletRepository):
                 "schedule_data": schedule_data,
                 "product_stop_list": [str(uid) for uid in outlet.product_stop_list],
                 "modifier_stop_list": [str(uid) for uid in outlet.modifier_stop_list],
-                "local_assortment": [str(uid) for uid in outlet.local_assortment] if outlet.local_assortment is not None else None,
+                "local_assortment": [str(uid) for uid in outlet.local_assortment]
+                if outlet.local_assortment is not None
+                else None,
                 "product_price_overrides": product_price_overrides,
                 "modifier_price_overrides": modifier_price_overrides,
             },
@@ -111,7 +135,7 @@ class DjangoOutletRepository(IOutletRepository):
         schedule = None
         if model.schedule_data:
             kwargs = {}
-            for day, times in model.schedule_data.items():
+            for day, times in cast(dict[str, Any], model.schedule_data).items():
                 kwargs[day] = WorkingHours(
                     open_time=time.fromisoformat(times["open_time"]),
                     close_time=time.fromisoformat(times["close_time"]),
@@ -119,23 +143,43 @@ class DjangoOutletRepository(IOutletRepository):
             schedule = Schedule(**kwargs)
 
         # Deserialize overrides
-        product_price_overrides = {
-            uuid.UUID(k): Money(**v) for k, v in model.product_price_overrides.items()
-        } if model.product_price_overrides else {}
+        product_price_overrides = (
+            {
+                uuid.UUID(k): Money(**v)
+                for k, v in cast(dict[str, Any], model.product_price_overrides).items()
+            }
+            if model.product_price_overrides
+            else {}
+        )
 
-        modifier_price_overrides = {
-            uuid.UUID(k): Money(**v) for k, v in model.modifier_price_overrides.items()
-        } if model.modifier_price_overrides else {}
+        modifier_price_overrides = (
+            {
+                uuid.UUID(k): Money(**v)
+                for k, v in cast(dict[str, Any], model.modifier_price_overrides).items()
+            }
+            if model.modifier_price_overrides
+            else {}
+        )
 
         return Outlet(
-            id=model.id,
-            company_id=model.company_id,
-            name=model.name,
-            is_accepting_orders=model.is_accepting_orders,
+            id=cast(uuid.UUID, model.id),
+            company_id=cast(
+                uuid.UUID, model.company_id if model.company_id else uuid.UUID(int=0)
+            ),
+            name=str(model.name),
+            is_accepting_orders=bool(model.is_accepting_orders),
             schedule=schedule,
-            product_stop_list={uuid.UUID(uid) for uid in model.product_stop_list},
-            modifier_stop_list={uuid.UUID(uid) for uid in model.modifier_stop_list},
-            local_assortment={uuid.UUID(uid) for uid in model.local_assortment} if model.local_assortment is not None else None,
+            product_stop_list={
+                uuid.UUID(uid) for uid in cast(list[str], model.product_stop_list)
+            },
+            modifier_stop_list={
+                uuid.UUID(uid) for uid in cast(list[str], model.modifier_stop_list)
+            },
+            local_assortment={
+                uuid.UUID(uid) for uid in cast(list[str], model.local_assortment)
+            }
+            if model.local_assortment is not None
+            else None,
             product_price_overrides=product_price_overrides,
             modifier_price_overrides=modifier_price_overrides,
         )
@@ -167,14 +211,16 @@ class DjangoProductRepository(IProductRepository):
                 }
                 for opt in group.options
             ]
-            groups_data.append({
-                "id": str(group.id),
-                "name": group.name,
-                "options": opts_data,
-                "is_required": group.is_required,
-                "min_selections": group.min_selections,
-                "max_selections": group.max_selections,
-            })
+            groups_data.append(
+                {
+                    "id": str(group.id),
+                    "name": group.name,
+                    "options": opts_data,
+                    "is_required": group.is_required,
+                    "min_selections": group.min_selections,
+                    "max_selections": group.max_selections,
+                }
+            )
 
         ProductModel.objects.update_or_create(
             id=product.id,
@@ -191,12 +237,14 @@ class DjangoProductRepository(IProductRepository):
 
     def _to_entity(self, model: ProductModel) -> Product:
         groups = []
-        for g_data in model.modifier_groups_data:
+        for g_data in cast(list[dict[str, Any]], model.modifier_groups_data):
             options = [
                 ModifierOption(
                     id=uuid.UUID(opt["id"]),
                     name=opt["name"],
-                    price_adjustment=Money(amount=opt["price_amount"], currency=opt["price_currency"]),
+                    price_adjustment=Money(
+                        amount=opt["price_amount"], currency=opt["price_currency"]
+                    ),
                     is_available=opt.get("is_available", True),
                 )
                 for opt in g_data.get("options", [])
@@ -213,13 +261,16 @@ class DjangoProductRepository(IProductRepository):
             )
 
         return Product(
-            id=model.id,
-            name=model.name,
-            description=model.description,
-            base_price=Money(amount=model.base_price_amount, currency=model.base_price_currency),
-            category_id=model.category_id,
+            id=cast(uuid.UUID, model.id),
+            name=str(model.name),
+            description=str(model.description),
+            base_price=Money(
+                amount=cast(int, model.base_price_amount),
+                currency=str(model.base_price_currency),
+            ),
+            category_id=cast(uuid.UUID, model.category_id if model.category_id else None),
             modifier_groups=groups,
-            is_active=model.is_active,
+            is_active=bool(model.is_active),
         )
 
 
@@ -228,23 +279,27 @@ class DjangoClientRepository(IClientRepository):
         try:
             model = ClientModel.objects.get(phone_number=phone)
             return Client(
-                id=model.id,
-                phone_number=model.phone_number,
-                first_name=model.first_name,
-                last_name=model.last_name,
+                id=cast(uuid.UUID, model.id),
+                phone_number=str(model.phone_number),
+                first_name=str(model.first_name) if model.first_name else None,
+                last_name=str(model.last_name) if model.last_name else None,
             )
         except ClientModel.DoesNotExist:
             return None
 
-    def get_loyalty_profile(self, client_id: uuid.UUID, company_id: uuid.UUID) -> LoyaltyProfile | None:
+    def get_loyalty_profile(
+        self, client_id: uuid.UUID, company_id: uuid.UUID
+    ) -> LoyaltyProfile | None:
         try:
-            model = LoyaltyProfileModel.objects.get(client_id=client_id, company_id=company_id)
+            model = LoyaltyProfileModel.objects.get(
+                client_id=client_id, company_id=company_id
+            )
             return LoyaltyProfile(
-                id=model.id,
-                client_id=model.client_id,
-                company_id=model.company_id,
-                balance=model.balance,
-                total_spent=model.total_spent,
+                id=cast(uuid.UUID, model.id),
+                client_id=cast(uuid.UUID, model.client.id),
+                company_id=cast(uuid.UUID, model.company.id),
+                balance=int(model.balance),
+                total_spent=int(model.total_spent),
             )
         except LoyaltyProfileModel.DoesNotExist:
             return None
@@ -279,42 +334,57 @@ class DjangoOrderRepository(IOrderRepository):
 
             delivery_address = None
             if model.delivery_address_data:
-                delivery_address = Address(**model.delivery_address_data)
+                delivery_address = Address(
+                    **cast(dict[str, Any], model.delivery_address_data)
+                )
 
             items = []
             for item_model in model.items.all():
                 selected_mods = {
                     uuid.UUID(k): [uuid.UUID(uid) for uid in v]
-                    for k, v in item_model.selected_modifiers_data.items()
+                    for k, v in cast(
+                        dict[str, list[str]], item_model.selected_modifiers_data
+                    ).items()
                 }
                 items.append(
                     OrderItem(
-                        id=item_model.id,
-                        product_id=item_model.product_id,
-                        quantity=item_model.quantity,
-                        price=Money(amount=item_model.price_amount, currency=item_model.price_currency),
+                        id=cast(uuid.UUID, item_model.id),
+                        product_id=cast(uuid.UUID, item_model.product_id),
+                        quantity=int(item_model.quantity),
+                        price=Money(
+                            amount=int(item_model.price_amount),
+                            currency=str(item_model.price_currency),
+                        ),
                         selected_modifiers=selected_mods,
                     )
                 )
 
             total_amount = None
-            if model.total_amount_amount is not None and model.total_amount_currency is not None:
-                total_amount = Money(amount=model.total_amount_amount, currency=model.total_amount_currency)
+            if (
+                model.total_amount_amount is not None
+                and model.total_amount_currency is not None
+            ):
+                total_amount = Money(
+                    amount=model.total_amount_amount,
+                    currency=model.total_amount_currency,
+                )
 
             return Order(
-                id=model.id,
-                client_id=model.client_id,
-                outlet_id=model.outlet_id,
+                id=cast(uuid.UUID, model.id),
+                client_id=cast(uuid.UUID, model.client.id) if model.client else None,
+                outlet_id=cast(uuid.UUID, model.outlet.id),
                 items=items,
-                delivery_method=DeliveryMethod(model.delivery_method),
-                status=OrderStatus(model.status),
+                delivery_method=DeliveryMethod(str(model.delivery_method)),
+                status=OrderStatus(str(model.status)),
                 delivery_address=delivery_address,
                 scheduled_time=model.scheduled_time,
-                applied_loyalty_points=model.applied_loyalty_points,
+                applied_loyalty_points=int(model.applied_loyalty_points),
                 total_amount=total_amount,
-                receipt_id=model.receipt_id,
-                delivery_tracking_id=model.delivery_tracking_id,
-                external_id=model.external_id,
+                receipt_id=str(model.receipt_id) if model.receipt_id else None,
+                delivery_tracking_id=str(model.delivery_tracking_id)
+                if model.delivery_tracking_id
+                else None,
+                external_id=str(model.external_id) if model.external_id else None,
             )
         except OrderModel.DoesNotExist:
             return None

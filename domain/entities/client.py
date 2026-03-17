@@ -20,13 +20,16 @@ class LoyaltyProfile(Entity):
 
     def spend_points(self, points: int) -> None:
         if not self.can_spend(points):
-            raise InsufficientPointsError(f"Cannot spend {points} points. Balance is {self.balance}.")
+            raise InsufficientPointsError(
+                f"Cannot spend {points} points. Balance is {self.balance}."
+            )
         self.balance -= points
 
     def add_points(self, points: int) -> None:
         if points < 0:
             raise ValueError("Cannot add negative points.")
         self.balance += points
+
 
 @dataclass(kw_only=True)
 class Client(Entity):

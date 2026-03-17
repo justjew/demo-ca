@@ -64,4 +64,6 @@ class Outlet(Entity):
 
     def validate_can_order(self, current_dt: datetime) -> None:
         if not self.can_accept_orders(current_dt):
-            raise OutletNotAcceptingOrdersError(f"Outlet {self.name} is currently closed or not accepting orders.")
+            raise OutletNotAcceptingOrdersError(
+                f"Outlet {self.name} is currently closed or not accepting orders."
+            )

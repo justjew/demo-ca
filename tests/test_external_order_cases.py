@@ -14,37 +14,56 @@ from domain.value_objects import DeliveryMethod, Money
 def order_repo_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def outlet_repo_mock():
     return MagicMock()
+
 
 @pytest.fixture
 def external_gateway_mock():
     return MagicMock()
 
+
 @pytest.fixture
 def event_dispatcher_mock():
     return MagicMock()
 
+
 @pytest.fixture
-def use_case(order_repo_mock, outlet_repo_mock, external_gateway_mock, event_dispatcher_mock):
+def use_case(
+    order_repo_mock, outlet_repo_mock, external_gateway_mock, event_dispatcher_mock
+):
     return AcceptExternalOrderUseCase(
         order_repo=order_repo_mock,
         outlet_repo=outlet_repo_mock,
         external_order_gateway=external_gateway_mock,
-        event_dispatcher=event_dispatcher_mock
+        event_dispatcher=event_dispatcher_mock,
     )
 
-def test_accept_external_order_success(use_case, outlet_repo_mock, external_gateway_mock, order_repo_mock, event_dispatcher_mock):
+
+def test_accept_external_order_success(
+    use_case,
+    outlet_repo_mock,
+    external_gateway_mock,
+    order_repo_mock,
+    event_dispatcher_mock,
+):
     current_dt = datetime.now()
     payload = {"ext_id": "123", "items": []}
 
     order_mock = Order(
         client_id=uuid.uuid4(),
         outlet_id=uuid.uuid4(),
-        items=[OrderItem(product_id=uuid.uuid4(), quantity=1, price=Money(amount=100, currency="USD"))],
+        items=[
+            OrderItem(
+                product_id=uuid.uuid4(),
+                quantity=1,
+                price=Money(amount=100, currency="USD"),
+            )
+        ],
         delivery_method=DeliveryMethod.DELIVERY,
-        external_id="123"
+        external_id="123",
     )
     order_mock.total_amount = Money(amount=100, currency="USD")
     external_gateway_mock.parse_incoming_payload.return_value = order_mock
