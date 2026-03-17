@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-03-18
+
+### Added
+- **Extended API Surface**: Implemented DRF views for Modifier Configuration, External Order Acceptance, and Loyalty Accrual calculation.
+- **Type Safety**: Achieved 100% Pyright compliance across the codebase, resolving ~160 static analysis errors.
+- **Model Enhancements**: Added explicit type hints and foreign key ID annotations to Django ORM models for improved developer experience.
+
 ## [0.6.0] - 2026-03-17
 
 ### Added

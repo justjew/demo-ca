@@ -20,7 +20,9 @@ The codebase follows the hexagonal architecture (Ports & Adapters) pattern:
 - **Strict Isolation**: The domain layer has no knowledge of Django or the database.
 - **Framework Agnostic**: The web and DB layers are isolated in `adapters/`, making it easy to swap them for FastAPI or SQLAlchemy.
 - **Advanced Pricing**: Supports outlet-specific price overrides and complex modifier rules.
-- **Loyalty System**: Multi-tier loyalty levels based on historical customer spend.
+- **Modifier Management**: API endpoints for dynamic configuration of product modifiers.
+- **Loyalty System**: Multi-tier loyalty levels based on historical customer spend, with dedicated accrual calculation endpoints.
+- **External Integrations**: Support for accepting and processing orders from third-party platforms.
 - **Automated Workflows**: Automatic courier Dispatching, Receipt generation, and Status transitions.
 
 ## Running and Testing
@@ -38,4 +40,14 @@ uv pip install -e .
 To run all tests:
 ```bash
 uv run pytest
+```
+
+### Static Analysis and Linting
+The project maintains high code quality using `ruff` and `pyright`.
+```bash
+# Run linter
+uv run ruff check .
+
+# Run static analyzer
+uv run pyright .
 ```
