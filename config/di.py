@@ -18,7 +18,10 @@ from domain.interfaces.gateways import (
 from domain.use_cases.catalog_cases import (
     ConfigureModifiersUseCase,
     ManageStopListUseCase,
+    ProductCrudUseCase,
 )
+from domain.use_cases.client_cases import ClientCrudUseCase
+from domain.use_cases.company_cases import CompanyCrudUseCase
 from domain.use_cases.external_order_cases import AcceptExternalOrderUseCase
 from domain.use_cases.loyalty_cases import CalculateAccrualUseCase
 from domain.use_cases.order_cases import (
@@ -26,6 +29,7 @@ from domain.use_cases.order_cases import (
     CreateOrderUseCase,
     ProcessPaymentUseCase,
 )
+from domain.use_cases.outlet_cases import OutletCrudUseCase
 from domain.value_objects import Address, DeliveryMethod, Money, OrderStatus
 
 
@@ -55,7 +59,6 @@ class DummyFiscalGateway(IFiscalGateway):
 
 class DummyExternalOrderGateway(IExternalOrderGateway):
     def parse_incoming_payload(self, payload: dict[str, Any]) -> Order:
-        # Dummy parsing logic, assumes the payload has exactly the same structure as an Order
         items = []
         for item_data in payload.get("items", []):
             selected_modifiers = {
@@ -97,6 +100,8 @@ def dummy_event_dispatcher(event: Any) -> None:
 class Container:
     """Simple Composition Root for injecting dependencies."""
 
+    # --- Repositories ---
+
     @classmethod
     def get_company_repo(cls):
         return DjangoCompanyRepository()
@@ -116,6 +121,26 @@ class Container:
     @classmethod
     def get_order_repo(cls):
         return DjangoOrderRepository()
+
+    # --- CRUD Use Cases (one per entity) ---
+
+    @classmethod
+    def get_client_crud(cls):
+        return ClientCrudUseCase(client_repo=cls.get_client_repo())
+
+    @classmethod
+    def get_company_crud(cls):
+        return CompanyCrudUseCase(repo=cls.get_company_repo())
+
+    @classmethod
+    def get_outlet_crud(cls):
+        return OutletCrudUseCase(repo=cls.get_outlet_repo())
+
+    @classmethod
+    def get_product_crud(cls):
+        return ProductCrudUseCase(repo=cls.get_product_repo())
+
+    # --- Domain-specific Use Cases ---
 
     @classmethod
     def get_manage_stop_list_use_case(cls):

@@ -23,7 +23,7 @@ class OutletModel(models.Model):
     company = models.ForeignKey(
         CompanyModel, on_delete=models.CASCADE, related_name="outlets"
     )
-    company_id: uuid.UUID # type: ignore
+    company_id: uuid.UUID  # type: ignore
     name = models.CharField(max_length=255)
     is_accepting_orders = models.BooleanField(default=True)  # type: ignore
     schedule_data = models.JSONField(null=True, blank=True)
@@ -56,7 +56,7 @@ class ProductModel(models.Model):
     category = models.ForeignKey(
         CategoryModel, on_delete=models.SET_NULL, null=True, blank=True
     )
-    category_id: uuid.UUID | None # type: ignore
+    category_id: uuid.UUID | None  # type: ignore
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     base_price_amount = models.IntegerField()
@@ -87,9 +87,9 @@ class LoyaltyProfileModel(models.Model):
     client = models.ForeignKey(
         ClientModel, on_delete=models.CASCADE, related_name="loyalty_profiles"
     )
-    client_id: uuid.UUID # type: ignore
+    client_id: uuid.UUID  # type: ignore
     company = models.ForeignKey(CompanyModel, on_delete=models.CASCADE)
-    company_id: uuid.UUID # type: ignore
+    company_id: uuid.UUID  # type: ignore
     balance = models.IntegerField(default=0)  # type: ignore
     total_spent = models.IntegerField(default=0)  # type: ignore
 
@@ -108,9 +108,9 @@ class OrderModel(models.Model):
         blank=True,
         related_name="orders",
     )
-    client_id: uuid.UUID | None # type: ignore
+    client_id: uuid.UUID | None  # type: ignore
     outlet = models.ForeignKey(OutletModel, on_delete=models.PROTECT)
-    outlet_id: uuid.UUID # type: ignore
+    outlet_id: uuid.UUID  # type: ignore
     delivery_method = models.CharField(max_length=50)
     status = models.CharField(max_length=50)
 
@@ -136,7 +136,7 @@ class OrderItemModel(models.Model):
     order = models.ForeignKey(
         OrderModel, on_delete=models.CASCADE, related_name="items"
     )
-    order_id: uuid.UUID # type: ignore
+    order_id: uuid.UUID  # type: ignore
     product_id = models.UUIDField()
     quantity = models.IntegerField()
     price_amount = models.IntegerField()

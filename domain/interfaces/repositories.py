@@ -6,43 +6,26 @@ from ..entities.client import Client, LoyaltyProfile
 from ..entities.company import Company
 from ..entities.order import Order
 from ..entities.outlet import Outlet
+from .crud_repository import ICrudRepository
 
 
-class ICompanyRepository(ABC):
-    @abstractmethod
-    def get_by_id(self, company_id: uuid.UUID) -> Company | None:
-        pass
-
-    @abstractmethod
-    def save(self, company: Company) -> None:
-        pass
+class ICompanyRepository(ICrudRepository[Company]):
+    """Extends generic CRUD with company-specific queries if needed."""
 
 
-class IOutletRepository(ABC):
-    @abstractmethod
-    def get_by_id(self, outlet_id: uuid.UUID) -> Outlet | None:
-        pass
+class IOutletRepository(ICrudRepository[Outlet]):
+    """Extends generic CRUD with outlet-specific queries."""
 
     @abstractmethod
     def list_by_company(self, company_id: uuid.UUID) -> list[Outlet]:
         pass
 
-    @abstractmethod
-    def save(self, outlet: Outlet) -> None:
-        pass
 
-
-class IProductRepository(ABC):
-    @abstractmethod
-    def get_by_id(self, product_id: uuid.UUID) -> Product | None:
-        pass
+class IProductRepository(ICrudRepository[Product]):
+    """Extends generic CRUD with product-specific queries."""
 
     @abstractmethod
     def get_many(self, product_ids: list[uuid.UUID]) -> list[Product]:
-        pass
-
-    @abstractmethod
-    def save(self, product: Product) -> None:
         pass
 
 
@@ -56,7 +39,9 @@ class IOrderRepository(ABC):
         pass
 
 
-class IClientRepository(ABC):
+class IClientRepository(ICrudRepository[Client]):
+    """Extends generic CRUD with client-specific queries."""
+
     @abstractmethod
     def get_by_phone(self, phone: str) -> Client | None:
         pass
@@ -69,4 +54,8 @@ class IClientRepository(ABC):
 
     @abstractmethod
     def save_loyalty_profile(self, profile: LoyaltyProfile) -> None:
+        pass
+
+    @abstractmethod
+    def save_client(self, client: Client) -> None:
         pass

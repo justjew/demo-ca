@@ -4,17 +4,10 @@ version = "0.7.0"
 description = "Clean Architecture domain business layer"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = [
-    "django>=5.2.12",
-    "djangorestframework>=3.16.1",
-]
+dependencies = ["django>=5.2.12", "djangorestframework>=3.16.1"]
 
 [project.optional-dependencies]
-dev = [
-    "ruff",
-    "pyright",
-    "pytest"
-]
+dev = ["ruff", "pyright", "pytest"]
 
 [build-system]
 requires = ["hatchling"]
@@ -33,11 +26,7 @@ ignore = ["E501"]
 
 [tool.pyright]
 typeCheckingMode = "standard"
-include = ["domain", "verify.py"]
+include = ["domain"]
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.408",
-    "pytest>=9.0.2",
-    "ruff>=0.15.6",
-]
+dev = ["pyright>=1.1.408", "pytest>=9.0.2", "ruff>=0.15.6"]

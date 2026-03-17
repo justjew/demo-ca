@@ -38,19 +38,22 @@ class DjangoCompanyRepository(ICompanyRepository):
     def get_by_id(self, company_id: uuid.UUID) -> Company | None:
         try:
             model = CompanyModel.objects.get(id=company_id)
-            levels = [
-                LoyaltyLevel(id=uuid.uuid4(), **lvl)
-                for lvl in cast(list[dict[str, Any]], model.loyalty_levels_data)
-            ]
-            return Company(
-                id=cast(uuid.UUID, model.id),
-                name=str(model.name),
-                tax_id=str(model.tax_id),
-                loyalty_levels=levels,
-                max_loyalty_payment_percent=float(model.max_loyalty_payment_percent),
-            )
+            return self._to_entity(model)
         except CompanyModel.DoesNotExist:
             return None
+
+    def _to_entity(self, model: CompanyModel) -> Company:
+        levels = [
+            LoyaltyLevel(id=uuid.uuid4(), **lvl)
+            for lvl in cast(list[dict[str, Any]], model.loyalty_levels_data)
+        ]
+        return Company(
+            id=cast(uuid.UUID, model.id),
+            name=str(model.name),
+            tax_id=str(model.tax_id),
+            loyalty_levels=levels,
+            max_loyalty_payment_percent=float(model.max_loyalty_payment_percent),
+        )
 
     def save(self, company: Company) -> None:
         levels_data = [
@@ -70,6 +73,13 @@ class DjangoCompanyRepository(ICompanyRepository):
                 "max_loyalty_payment_percent": company.max_loyalty_payment_percent,
             },
         )
+
+    def delete(self, company_id: uuid.UUID) -> None:
+        CompanyModel.objects.filter(id=company_id).delete()
+
+    def list(self, limit: int, offset: int) -> list[Company]:
+        models = CompanyModel.objects.all()[offset : offset + limit]
+        return [self._to_entity(m) for m in models]
 
 
 class DjangoOutletRepository(IOutletRepository):
@@ -130,6 +140,13 @@ class DjangoOutletRepository(IOutletRepository):
                 "modifier_price_overrides": modifier_price_overrides,
             },
         )
+
+    def delete(self, outlet_id: uuid.UUID) -> None:
+        OutletModel.objects.filter(id=outlet_id).delete()
+
+    def list(self, limit: int, offset: int) -> list[Outlet]:
+        models = OutletModel.objects.all()[offset : offset + limit]
+        return [self._to_entity(m) for m in models]
 
     def _to_entity(self, model: OutletModel) -> Outlet:
         schedule = None
@@ -235,6 +252,13 @@ class DjangoProductRepository(IProductRepository):
             },
         )
 
+    def delete(self, product_id: uuid.UUID) -> None:
+        ProductModel.objects.filter(id=product_id).delete()
+
+    def list(self, limit: int, offset: int) -> list[Product]:
+        models = ProductModel.objects.all()[offset : offset + limit]
+        return [self._to_entity(m) for m in models]
+
     def _to_entity(self, model: ProductModel) -> Product:
         groups = []
         for g_data in cast(list[dict[str, Any]], model.modifier_groups_data):
@@ -268,13 +292,27 @@ class DjangoProductRepository(IProductRepository):
                 amount=cast(int, model.base_price_amount),
                 currency=str(model.base_price_currency),
             ),
-            category_id=cast(uuid.UUID, model.category_id if model.category_id else None),
+            category_id=cast(
+                uuid.UUID, model.category_id if model.category_id else None
+            ),
             modifier_groups=groups,
             is_active=bool(model.is_active),
         )
 
 
 class DjangoClientRepository(IClientRepository):
+    def get_by_id(self, client_id: uuid.UUID) -> Client | None:
+        try:
+            model = ClientModel.objects.get(id=client_id)
+            return Client(
+                id=cast(uuid.UUID, model.id),
+                phone_number=str(model.phone_number),
+                first_name=str(model.first_name) if model.first_name else None,
+                last_name=str(model.last_name) if model.last_name else None,
+            )
+        except ClientModel.DoesNotExist:
+            return None
+
     def get_by_phone(self, phone: str) -> Client | None:
         try:
             model = ClientModel.objects.get(phone_number=phone)
@@ -315,6 +353,9 @@ class DjangoClientRepository(IClientRepository):
             },
         )
 
+    def save(self, entity: Client) -> None:
+        self.save_client(entity)
+
     def save_client(self, client: Client) -> None:
         # Useful helper for future
         ClientModel.objects.update_or_create(
@@ -325,6 +366,21 @@ class DjangoClientRepository(IClientRepository):
                 "last_name": client.last_name,
             },
         )
+
+    def delete(self, client_id: uuid.UUID) -> None:
+        ClientModel.objects.filter(id=client_id).delete()
+
+    def list(self, limit: int, offset: int) -> list[Client]:
+        models = ClientModel.objects.all()[offset : offset + limit]
+        return [
+            Client(
+                id=cast(uuid.UUID, model.id),
+                phone_number=str(model.phone_number),
+                first_name=str(model.first_name) if model.first_name else None,
+                last_name=str(model.last_name) if model.last_name else None,
+            )
+            for model in models
+        ]
 
 
 class DjangoOrderRepository(IOrderRepository):
