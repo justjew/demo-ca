@@ -1,9 +1,10 @@
-from ..value_objects import Address
 from ..entities.outlet import Outlet
+from ..value_objects import Address
+
 
 class DeliveryService:
     """Domain service for checking delivery coverage."""
-    
+
     @staticmethod
     def is_address_covered(address: Address, outlet: Outlet) -> bool:
         """
@@ -15,5 +16,5 @@ class DeliveryService:
         # or we implement real coordinate logic here later.
         if not address.city:
             return False
-            
+
         return True

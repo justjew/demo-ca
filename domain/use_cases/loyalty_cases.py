@@ -1,19 +1,25 @@
 import uuid
-from typing import Callable
+from typing import Callable, Any
 from datetime import datetime
-from ..interfaces.repositories import IClientRepository, ICompanyRepository, IOrderRepository
-from ..services.loyalty_service import LoyaltyService
+
 from ..events import LoyaltyPointsAccruedEvent
+from ..interfaces.repositories import (
+    IClientRepository,
+    ICompanyRepository,
+    IOrderRepository,
+)
+from ..services.loyalty_service import LoyaltyService
+
 
 class CalculateAccrualUseCase:
     """This use case could be fired by a DomainEvent listener when Order completes."""
-    
+
     def __init__(
         self,
         order_repo: IOrderRepository,
         client_repo: IClientRepository,
         company_repo: ICompanyRepository,
-        event_dispatcher: Callable[[any], None]
+        event_dispatcher: Callable[[Any], None]
     ):
         self.order_repo = order_repo
         self.client_repo = client_repo
@@ -24,19 +30,27 @@ class CalculateAccrualUseCase:
         order = self.order_repo.get_by_id(order_id)
         if not order:
             return
-            
+
         if not order.client_id:
             return  # Guest checkout, no point accrual
 
         profile = self.client_repo.get_loyalty_profile(order.client_id, order.outlet_id)
+        if not profile:
+            return
+            
         company = self.company_repo.get_by_id(profile.company_id) # Using profile's reference or resolving via outlet
+        if not company:
+            return
+            
+        if order.total_amount is None:
+            return
 
         points_to_add = LoyaltyService.calculate_accrual(order.total_amount, company, spent_points=0)
         if points_to_add > 0:
             profile.add_points(points_to_add)
             profile.total_spent += order.total_amount.amount
             self.client_repo.save_loyalty_profile(profile)
-            
+
             self.event_dispatcher(
                 LoyaltyPointsAccruedEvent(
                     occurred_on=current_dt,

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+
 from .base import Entity
+
 
 @dataclass(kw_only=True)
 class Company(Entity):

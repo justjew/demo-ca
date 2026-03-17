@@ -1,9 +1,10 @@
 from ..entities.company import Company
 from ..value_objects import Money
 
+
 class LoyaltyService:
     """Domain service for advanced loyalty logic."""
-    
+
     @staticmethod
     def calculate_accrual(order_total: Money, company: Company, spent_points: int = 0) -> int:
         """
@@ -13,6 +14,6 @@ class LoyaltyService:
         paid_amount = order_total.amount - spent_points
         if paid_amount <= 0:
             return 0
-            
+
         rate = company.get_loyalty_accrual_rate()
         return int(paid_amount * rate)
