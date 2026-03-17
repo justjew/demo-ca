@@ -20,6 +20,7 @@ from ..interfaces.repositories import (
     IOutletRepository,
     IProductRepository,
 )
+from ..interfaces.gateways import ILogisticsGateway, IPaymentGateway, IFiscalGateway
 from ..services.delivery_service import DeliveryService
 from ..services.pricing_service import PricingService
 from ..value_objects import Address, DeliveryMethod, OrderStatus
@@ -158,10 +159,12 @@ class ChangeOrderStatusUseCase:
     def __init__(
         self,
         order_repo: IOrderRepository,
-        event_dispatcher: Callable[[Any], None]
+        event_dispatcher: Callable[[Any], None],
+        logistics_gateway: ILogisticsGateway | None = None
     ):
         self.order_repo = order_repo
         self.event_dispatcher = event_dispatcher
+        self.logistics_gateway = logistics_gateway
 
     def execute(self, order_id: uuid.UUID, new_status: OrderStatus, current_dt: datetime) -> Order:
         order = self.order_repo.get_by_id(order_id)
@@ -171,6 +174,12 @@ class ChangeOrderStatusUseCase:
         old_status = order.status
         order.change_status(new_status)
 
+        if new_status == OrderStatus.READY and order.delivery_method == DeliveryMethod.DELIVERY and self.logistics_gateway and order.delivery_address:
+            # We assume the outlet pickup is known or handled behind the scenes.
+            # For simplicity, passing empty Address as pickup, real app would resolve from Outlet.
+            tracking_id = self.logistics_gateway.request_courier(order.id, Address(city="", street="", building=""), order.delivery_address)
+            order.delivery_tracking_id = tracking_id
+
         self.order_repo.save(order)
 
         self.event_dispatcher(
@@ -179,6 +188,53 @@ class ChangeOrderStatusUseCase:
                 order_id=order.id,
                 old_status=old_status,
                 new_status=new_status
+            )
+        )
+        return order
+
+
+class ProcessPaymentUseCase:
+    def __init__(
+        self,
+        order_repo: IOrderRepository,
+        payment_gateway: IPaymentGateway,
+        fiscal_gateway: IFiscalGateway,
+        event_dispatcher: Callable[[Any], None]
+    ):
+        self.order_repo = order_repo
+        self.payment_gateway = payment_gateway
+        self.fiscal_gateway = fiscal_gateway
+        self.event_dispatcher = event_dispatcher
+
+    def execute(self, order_id: uuid.UUID, current_dt: datetime) -> Order:
+        order = self.order_repo.get_by_id(order_id)
+        if not order:
+            raise ValueError("Order not found")
+
+        if order.status != OrderStatus.AWAITING_PAYMENT:
+            raise InvalidStateTransitionError("Order is not awaiting payment")
+
+        if order.total_amount is None:
+            raise ValueError("Order total is not calculated")
+
+        success = self.payment_gateway.process_payment(order.id, order.total_amount.amount, order.total_amount.currency)
+        if not success:
+            raise ValueError("Payment failed")
+
+        receipt_id = self.fiscal_gateway.generate_receipt(order)
+        order.receipt_id = receipt_id
+
+        old_status = order.status
+        order.change_status(OrderStatus.ACCEPTED)
+        
+        self.order_repo.save(order)
+        
+        self.event_dispatcher(
+            OrderStatusChangedEvent(
+                occurred_on=current_dt,
+                order_id=order.id,
+                old_status=old_status,
+                new_status=OrderStatus.ACCEPTED
             )
         )
         return order

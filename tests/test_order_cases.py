@@ -56,10 +56,36 @@ def create_order_use_case(order_repo_mock, outlet_repo_mock, product_repo_mock, 
 
 @pytest.fixture
 def change_status_use_case(order_repo_mock, event_dispatcher_mock):
-    return ChangeOrderStatusUseCase(
+    # Mock LogisticsGateway for testing
+    from domain.interfaces.gateways import ILogisticsGateway
+    logistics_gateway_mock = MagicMock(spec=ILogisticsGateway)
+    logistics_gateway_mock.request_courier.return_value = "TRK-12345"
+    
+    use_case = ChangeOrderStatusUseCase(
         order_repo=order_repo_mock,
+        event_dispatcher=event_dispatcher_mock,
+        logistics_gateway=logistics_gateway_mock
+    )
+    return use_case
+
+@pytest.fixture
+def process_payment_use_case(order_repo_mock, event_dispatcher_mock):
+    from domain.use_cases.order_cases import ProcessPaymentUseCase
+    from domain.interfaces.gateways import IPaymentGateway, IFiscalGateway
+    
+    payment_gateway_mock = MagicMock(spec=IPaymentGateway)
+    payment_gateway_mock.process_payment.return_value = True
+    
+    fiscal_gateway_mock = MagicMock(spec=IFiscalGateway)
+    fiscal_gateway_mock.generate_receipt.return_value = "REC-999"
+    
+    use_case = ProcessPaymentUseCase(
+        order_repo=order_repo_mock,
+        payment_gateway=payment_gateway_mock,
+        fiscal_gateway=fiscal_gateway_mock,
         event_dispatcher=event_dispatcher_mock
     )
+    return use_case
 
 def test_create_order_empty_cart(create_order_use_case):
     cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[])
@@ -335,6 +361,60 @@ def test_change_order_status_not_found(change_status_use_case, order_repo_mock):
     
     with pytest.raises(ValueError, match="Order not found"):
         change_status_use_case.execute(order_id, OrderStatus.AWAITING_PAYMENT, datetime.now())
+
+def test_change_order_status_triggers_logistics(change_status_use_case, order_repo_mock):
+    order_id = uuid.uuid4()
+    order_mock = Order(
+        client_id=uuid.uuid4(),
+        outlet_id=uuid.uuid4(),
+        items=[],
+        delivery_method=DeliveryMethod.DELIVERY,
+        delivery_address=Address(city="Test", street="Test", building="1")
+    )
+    order_mock.id = order_id
+    order_mock.status = OrderStatus.ACCEPTED
+    order_repo_mock.get_by_id.return_value = order_mock
+    
+    current_dt = datetime.now()
+    
+    change_status_use_case.execute(order_id, OrderStatus.READY, current_dt)
+    
+    assert order_mock.delivery_tracking_id == "TRK-12345"
+    change_status_use_case.logistics_gateway.request_courier.assert_called_once_with(
+        order_id,
+        Address(city="", street="", building=""),
+        order_mock.delivery_address
+    )
+
+def test_process_payment_success(process_payment_use_case, order_repo_mock, event_dispatcher_mock):
+    order_id = uuid.uuid4()
+    order_mock = Order(
+        client_id=uuid.uuid4(),
+        outlet_id=uuid.uuid4(),
+        items=[],
+        delivery_method=DeliveryMethod.PICKUP
+    )
+    order_mock.id = order_id
+    order_mock.status = OrderStatus.AWAITING_PAYMENT
+    order_mock.total_amount = Money(amount=500, currency="USD")
+    order_repo_mock.get_by_id.return_value = order_mock
+    
+    current_dt = datetime.now()
+    
+    order = process_payment_use_case.execute(order_id, current_dt)
+    
+    assert order.status == OrderStatus.ACCEPTED
+    assert order.receipt_id == "REC-999"
+    
+    process_payment_use_case.payment_gateway.process_payment.assert_called_once_with(order_id, 500, "USD")
+    process_payment_use_case.fiscal_gateway.generate_receipt.assert_called_once_with(order_mock)
+    order_repo_mock.save.assert_called_once_with(order_mock)
+    
+    event_dispatcher_mock.assert_called_once()
+    event = event_dispatcher_mock.call_args[0][0]
+    assert event.order_id == order_id
+    assert event.old_status == OrderStatus.AWAITING_PAYMENT
+    assert event.new_status == OrderStatus.ACCEPTED
 
 
 def test_create_order_product_not_in_assortment(create_order_use_case, outlet_repo_mock, company_repo_mock):

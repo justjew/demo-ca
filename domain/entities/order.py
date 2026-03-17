@@ -43,6 +43,10 @@ class Order(Entity):
     applied_loyalty_points: int = 0
     total_amount: Money | None = None # Calculated total including points deduction
 
+    receipt_id: str | None = None
+    delivery_tracking_id: str | None = None
+    external_id: str | None = None
+
     def calculate_total(self) -> None:
         """Helper to compute basic total. Note: Pricing service normally does complex math."""
         if not self.items:
