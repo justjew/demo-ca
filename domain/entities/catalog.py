@@ -46,16 +46,26 @@ class Product(Entity):
     modifier_groups: list[ModifierGroup] = field(default_factory=list)
     is_active: bool = True
 
-    def calculate_price(self, selected_modifiers: dict[uuid.UUID, list[uuid.UUID]]) -> Money:
+    def calculate_price(
+        self,
+        selected_modifiers: dict[uuid.UUID, list[uuid.UUID]],
+        product_price_override: Money | None = None,
+        modifier_price_overrides: dict[uuid.UUID, Money] | None = None
+    ) -> Money:
         """
         Calculates the price of the product given a mapping of:
         ModifierGroup ID -> List of ModifierOption IDs
+        Optionally accepts base price and modifier price overrides.
         """
-        total = self.base_price
+        modifier_price_overrides = modifier_price_overrides or {}
+        total = product_price_override if product_price_override is not None else self.base_price
         for group in self.modifier_groups:
             if group.id in selected_modifiers:
                 # We assume validation has already passed (or will fail nicely if opt not found)
                 opts = [opt for opt in group.options if opt.id in selected_modifiers[group.id]]
                 for opt in opts:
-                    total += opt.price_adjustment
+                    if opt.id in modifier_price_overrides:
+                        total += modifier_price_overrides[opt.id]
+                    else:
+                        total += opt.price_adjustment
         return total

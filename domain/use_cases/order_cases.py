@@ -77,6 +77,10 @@ class CreateOrderUseCase:
         # 3. Process items and pricing
         order_items = []
         for cart_item in cart.items:
+            # Check assortment
+            if not outlet.is_in_assortment(cart_item.product_id):
+                raise ProductInStopListError(f"Product {cart_item.product_id} is not in local assortment")
+
             # Check stop lists
             if not outlet.is_product_available(cart_item.product_id):
                 raise ProductInStopListError(f"Product {cart_item.product_id} is unavailable")
@@ -96,7 +100,7 @@ class CreateOrderUseCase:
                 if not group.validate_selection(selected_for_group):
                     raise InvalidModifierError(f"Modifier constraints violated for group {group.name}")
 
-            unit_price = PricingService.calculate_order_item_price(product, cart_item.selected_modifiers)
+            unit_price = PricingService.calculate_order_item_price(product, cart_item.selected_modifiers, outlet=outlet)
             order_items.append(
                 OrderItem(
                     product_id=cart_item.product_id,

@@ -335,3 +335,49 @@ def test_change_order_status_not_found(change_status_use_case, order_repo_mock):
     
     with pytest.raises(ValueError, match="Order not found"):
         change_status_use_case.execute(order_id, OrderStatus.AWAITING_PAYMENT, datetime.now())
+
+
+def test_create_order_product_not_in_assortment(create_order_use_case, outlet_repo_mock, company_repo_mock):
+    product_id = uuid.uuid4()
+    cart_item = CartItem(product_id=product_id, quantity=1)
+    cart = Cart(client_id=uuid.uuid4(), outlet_id=uuid.uuid4(), items=[cart_item])
+    
+    outlet_mock = MagicMock(spec=Outlet)
+    outlet_mock.company_id = uuid.uuid4()
+    outlet_mock.is_in_assortment.return_value = False
+    outlet_repo_mock.get_by_id.return_value = outlet_mock
+    
+    company_mock = MagicMock(spec=Company)
+    company_repo_mock.get_by_id.return_value = company_mock
+    
+    with pytest.raises(ProductInStopListError, match=f"Product {product_id} is not in local assortment"):
+        create_order_use_case.execute(cart, DeliveryMethod.PICKUP, datetime.now())
+
+def test_create_order_with_price_overrides(create_order_use_case, outlet_repo_mock, company_repo_mock, product_repo_mock, order_repo_mock, event_dispatcher_mock):
+    client_id = uuid.uuid4()
+    product_id = uuid.uuid4()
+    modifier_id = uuid.uuid4()
+    group_id = uuid.uuid4()
+    cart_item = CartItem(product_id=product_id, quantity=1, selected_modifiers={group_id: [modifier_id]})
+    cart = Cart(client_id=client_id, outlet_id=uuid.uuid4(), items=[cart_item])
+    
+    outlet = Outlet(company_id=uuid.uuid4(), name="Test Outlet")
+    outlet.product_price_overrides[product_id] = Money(amount=150, currency="USD")
+    outlet.modifier_price_overrides[modifier_id] = Money(amount=20, currency="USD")
+    outlet_repo_mock.get_by_id.return_value = outlet
+    
+    company_mock = MagicMock(spec=Company)
+    company_repo_mock.get_by_id.return_value = company_mock
+    
+    from domain.entities.catalog import ModifierOption
+    modifier_opt = ModifierOption(id=modifier_id, name="Milk", price_adjustment=Money(amount=10, currency="USD"))
+    group = ModifierGroup(id=group_id, name="Addons", options=[modifier_opt])
+    product = Product(id=product_id, name="Coffee", description="", base_price=Money(amount=100, currency="USD"), category_id=uuid.uuid4(), modifier_groups=[group])
+    product_repo_mock.get_by_id.return_value = product
+    
+    current_dt = datetime.now()
+    order = create_order_use_case.execute(cart, DeliveryMethod.PICKUP, current_dt)
+    
+    # Total should be 150 (product override) + 20 (modifier override) = 170
+    assert order.items[0].price.amount == 170
+    assert order.total_amount.amount == 170
