@@ -129,7 +129,7 @@ def test_calculate_accrual_success(use_case, order_repo_mock, client_repo_mock, 
     
     use_case.execute(order_id, current_dt)
     
-    calculate_accrual_mock.assert_called_once_with(order_mock.total_amount, company_mock, spent_points=0)
+    calculate_accrual_mock.assert_called_once_with(order_mock.total_amount, company_mock, total_spent=500, spent_points=0)
     profile_mock.add_points.assert_called_once_with(100)
     assert profile_mock.total_spent == 1500  # 500 + 1000
     client_repo_mock.save_loyalty_profile.assert_called_once_with(profile_mock)
@@ -165,3 +165,54 @@ def test_calculate_accrual_no_points_added(use_case, order_repo_mock, client_rep
     profile_mock.add_points.assert_not_called()
     client_repo_mock.save_loyalty_profile.assert_not_called()
     event_dispatcher_mock.assert_not_called()
+
+
+def test_company_get_loyalty_accrual_rate_for_spent():
+    from domain.entities.company import Company, LoyaltyLevel
+    
+    # 1. Fallback behavior (no levels configured)
+    company_no_levels = Company(name="Test", tax_id="123")
+    assert company_no_levels.get_loyalty_accrual_rate_for_spent(0) == 0.05
+    assert company_no_levels.get_loyalty_accrual_rate_for_spent(1000) == 0.05
+    
+    # 2. Configured levels
+    levels = [
+        LoyaltyLevel(name="Bronze", min_spent_amount=0, accrual_rate=0.05),
+        LoyaltyLevel(name="Silver", min_spent_amount=10000, accrual_rate=0.10),
+        LoyaltyLevel(name="Gold", min_spent_amount=50000, accrual_rate=0.15)
+    ]
+    company = Company(name="Test", tax_id="123", loyalty_levels=levels)
+    
+    # 0 -> Bronze (5%)
+    assert company.get_loyalty_accrual_rate_for_spent(0) == 0.05
+    # 5000 -> Bronze (5%)
+    assert company.get_loyalty_accrual_rate_for_spent(5000) == 0.05
+    # 10000 -> Silver (10%)
+    assert company.get_loyalty_accrual_rate_for_spent(10000) == 0.10
+    # 49999 -> Silver (10%)
+    assert company.get_loyalty_accrual_rate_for_spent(49999) == 0.10
+    # 50000 -> Gold (15%)
+    assert company.get_loyalty_accrual_rate_for_spent(50000) == 0.15
+    # 1000000 -> Gold (15%)
+    assert company.get_loyalty_accrual_rate_for_spent(1000000) == 0.15
+
+
+def test_loyalty_service_calculate_accrual():
+    from domain.services.loyalty_service import LoyaltyService
+    from domain.entities.company import Company, LoyaltyLevel
+    from domain.value_objects import Money
+    
+    levels = [
+        LoyaltyLevel(name="Silver", min_spent_amount=10000, accrual_rate=0.10),
+    ]
+    company = Company(name="Test", tax_id="123", loyalty_levels=levels)
+    
+    # Customer with 15000 total spent (Silver, 10%)
+    # Order for 2000 money units, paying 500 with points
+    # Accrual should be on (2000 - 500) = 1500 amount
+    # Rate is 0.10, so 1500 * 0.10 = 150 points
+    
+    order_total = Money(amount=2000, currency="USD")
+    points = LoyaltyService.calculate_accrual(order_total, company, total_spent=15000, spent_points=500)
+    assert points == 150
+

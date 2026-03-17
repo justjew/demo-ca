@@ -45,7 +45,7 @@ class CalculateAccrualUseCase:
         if order.total_amount is None:
             return
 
-        points_to_add = LoyaltyService.calculate_accrual(order.total_amount, company, spent_points=0)
+        points_to_add = LoyaltyService.calculate_accrual(order.total_amount, company, total_spent=profile.total_spent, spent_points=0)
         if points_to_add > 0:
             profile.add_points(points_to_add)
             profile.total_spent += order.total_amount.amount
