@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-17
+
+### Added
+- **Infrastructure Layer**: Integrated Django as the primary application framework.
+- **Persistence Adapter**: Implemented Repository interfaces using Django ORM (`adapters/db/django_orm`).
+- **Web Adapter**: Exposed business logic via HTTP API using Django REST Framework (`adapters/web/drf_api`).
+- **Dependency Injection**: Added a Composition Root (`config/di.py`) to decouple the Domain from frameworks.
+- **Integration Testing**: Broadened test coverage with database and API level integration tests.
+
 ## [0.5.0] - 2026-03-17
 
 ### Added
