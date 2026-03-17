@@ -1,27 +1,30 @@
 import uuid
+
 from django.utils import timezone
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from config.di import Container
 from domain.entities.order import Cart, CartItem
 from domain.value_objects import Address, DeliveryMethod, OrderStatus
+
 from .serializers import (
+    ChangeOrderStatusRequestSerializer,
     CreateOrderRequestSerializer,
     OrderResponseSerializer,
-    ChangeOrderStatusRequestSerializer,
 )
+
 
 class OrderCreateView(APIView):
     def post(self, request):
         serializer = CreateOrderRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         data = serializer.validated_data
         cart_data = data['cart']
-        
+
         # Mapping to Domain Entities
         cart_items = [
             CartItem(
@@ -60,7 +63,7 @@ class OrderCreateView(APIView):
         except ValueError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # We would normally catch DomainExceptions here and map appropriately, 
+            # We would normally catch DomainExceptions here and map appropriately,
             # broad catch for demonstration
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -69,9 +72,9 @@ class OrderChangeStatusView(APIView):
         serializer = ChangeOrderStatusRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
         data = serializer.validated_data
-        
+
         use_case = Container.get_change_order_status_use_case()
         try:
             order = use_case.execute(
@@ -101,7 +104,7 @@ class CatalogOutletListView(APIView):
     def get(self, request, company_id):
         repo = Container.get_outlet_repo()
         outlets = repo.list_by_company(uuid.UUID(company_id))
-        
+
         data = [
             {
                 "id": str(outlet.id),
@@ -116,7 +119,7 @@ class CatalogStopListView(APIView):
     def post(self, request, outlet_id):
         product_id_str = request.data.get("product_id")
         action = request.data.get("action")
-        
+
         if not product_id_str or action not in ["add", "remove"]:
             return Response({"detail": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST)
 

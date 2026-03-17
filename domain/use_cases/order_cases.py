@@ -1,6 +1,7 @@
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import List, Callable, Optional, Any
+from typing import Any
 
 from ..entities.order import Cart, Order, OrderItem
 from ..events import (
@@ -11,8 +12,10 @@ from ..exceptions import (
     DeliveryNotAvailableError,
     InsufficientPointsError,
     InvalidModifierError,
+    InvalidStateTransitionError,
     ProductInStopListError,
 )
+from ..interfaces.gateways import IFiscalGateway, ILogisticsGateway, IPaymentGateway
 from ..interfaces.repositories import (
     IClientRepository,
     ICompanyRepository,
@@ -20,7 +23,6 @@ from ..interfaces.repositories import (
     IOutletRepository,
     IProductRepository,
 )
-from ..interfaces.gateways import ILogisticsGateway, IPaymentGateway, IFiscalGateway
 from ..services.delivery_service import DeliveryService
 from ..services.pricing_service import PricingService
 from ..value_objects import Address, DeliveryMethod, OrderStatus
@@ -61,7 +63,7 @@ class CreateOrderUseCase:
         outlet = self.outlet_repo.get_by_id(cart.outlet_id)
         if not outlet:
             raise ValueError("Outlet not found")
-            
+
         company = self.company_repo.get_by_id(outlet.company_id)
         if not company:
             raise ValueError("Company not found")
@@ -100,7 +102,7 @@ class CreateOrderUseCase:
             product = self.product_repo.get_by_id(cart_item.product_id)
             if not product:
                 raise ValueError(f"Product {cart_item.product_id} not found")
-                
+
             # Validate modifiers constraints
             for group in product.modifier_groups:
                 selected_for_group = cart_item.selected_modifiers.get(group.id, [])
@@ -128,10 +130,10 @@ class CreateOrderUseCase:
 
         # Calculate raw total early to validate loyalty limit
         order.calculate_total()
-        
+
         if order.total_amount is None:
             raise ValueError("Calculated order total cannot be None")
-        
+
         # 4. Handle loyalty points
         if spend_points > 0 and cart.client_id:
             profile = self.client_repo.get_loyalty_profile(cart.client_id, outlet.company_id)
@@ -233,9 +235,9 @@ class ProcessPaymentUseCase:
 
         old_status = order.status
         order.change_status(OrderStatus.ACCEPTED)
-        
+
         self.order_repo.save(order)
-        
+
         self.event_dispatcher(
             OrderStatusChangedEvent(
                 occurred_on=current_dt,

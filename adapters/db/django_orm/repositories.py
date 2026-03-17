@@ -1,7 +1,7 @@
 import uuid
 from datetime import time
 
-from domain.entities.catalog import Category, ModifierGroup, ModifierOption, Product
+from domain.entities.catalog import ModifierGroup, ModifierOption, Product
 from domain.entities.client import Client, LoyaltyProfile
 from domain.entities.company import Company, LoyaltyLevel
 from domain.entities.order import Order, OrderItem
@@ -13,10 +13,16 @@ from domain.interfaces.repositories import (
     IOutletRepository,
     IProductRepository,
 )
-from domain.value_objects import Address, DeliveryMethod, Money, OrderStatus, Schedule, WorkingHours
+from domain.value_objects import (
+    Address,
+    DeliveryMethod,
+    Money,
+    OrderStatus,
+    Schedule,
+    WorkingHours,
+)
 
 from .models import (
-    CategoryModel,
     ClientModel,
     CompanyModel,
     LoyaltyProfileModel,
@@ -116,7 +122,7 @@ class DjangoOutletRepository(IOutletRepository):
         product_price_overrides = {
             uuid.UUID(k): Money(**v) for k, v in model.product_price_overrides.items()
         } if model.product_price_overrides else {}
-        
+
         modifier_price_overrides = {
             uuid.UUID(k): Money(**v) for k, v in model.modifier_price_overrides.items()
         } if model.modifier_price_overrides else {}
@@ -270,7 +276,7 @@ class DjangoOrderRepository(IOrderRepository):
     def get_by_id(self, order_id: uuid.UUID) -> Order | None:
         try:
             model = OrderModel.objects.prefetch_related("items").get(id=order_id)
-            
+
             delivery_address = None
             if model.delivery_address_data:
                 delivery_address = Address(**model.delivery_address_data)

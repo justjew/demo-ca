@@ -1,5 +1,7 @@
 import uuid
+
 from django.db import models
+
 
 class CompanyModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -17,7 +19,7 @@ class OutletModel(models.Model):
     name = models.CharField(max_length=255)
     is_accepting_orders = models.BooleanField(default=True)
     schedule_data = models.JSONField(null=True, blank=True)
-    
+
     product_stop_list = models.JSONField(default=list, blank=True)
     modifier_stop_list = models.JSONField(default=list, blank=True)
     local_assortment = models.JSONField(null=True, blank=True)
@@ -73,14 +75,14 @@ class OrderModel(models.Model):
     outlet = models.ForeignKey(OutletModel, on_delete=models.PROTECT)
     delivery_method = models.CharField(max_length=50)
     status = models.CharField(max_length=50)
-    
+
     delivery_address_data = models.JSONField(null=True, blank=True)
     scheduled_time = models.DateTimeField(null=True, blank=True)
     applied_loyalty_points = models.IntegerField(default=0)
-    
+
     total_amount_amount = models.IntegerField(null=True, blank=True)
     total_amount_currency = models.CharField(max_length=3, null=True, blank=True)
-    
+
     receipt_id = models.CharField(max_length=100, null=True, blank=True)
     delivery_tracking_id = models.CharField(max_length=100, null=True, blank=True)
     external_id = models.CharField(max_length=100, null=True, blank=True)

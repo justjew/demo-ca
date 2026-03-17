@@ -2,7 +2,7 @@ import uuid
 
 from domain.entities.catalog import Category, ModifierGroup, ModifierOption, Product
 from domain.entities.client import Client, LoyaltyProfile
-from domain.entities.company import Company
+from domain.entities.company import Company, LoyaltyLevel
 from domain.entities.order import Cart, CartItem, Order
 from domain.entities.outlet import Outlet
 from domain.value_objects import DeliveryMethod, Money, OrderStatus
@@ -14,7 +14,9 @@ def test_happy_path():
         id=uuid.uuid4(),
         name="Test Food Group",
         tax_id="12345",
-        loyalty_accrual_rate=0.10,
+        loyalty_levels=[
+            LoyaltyLevel(id=uuid.uuid4(), name="Default", min_spent_amount=0, accrual_rate=0.10)
+        ],
     )
     outlet = Outlet(
         id=uuid.uuid4(),

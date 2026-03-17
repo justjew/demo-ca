@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from ..exceptions import OutletNotAcceptingOrdersError
-from ..value_objects import Schedule, Money
+from ..value_objects import Money, Schedule
 from .base import Entity
 
 

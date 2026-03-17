@@ -12,7 +12,7 @@ class ICompanyRepository(ABC):
     @abstractmethod
     def get_by_id(self, company_id: uuid.UUID) -> Company | None:
         pass
-        
+
     @abstractmethod
     def save(self, company: Company) -> None:
         pass
@@ -25,7 +25,7 @@ class IOutletRepository(ABC):
     @abstractmethod
     def list_by_company(self, company_id: uuid.UUID) -> list[Outlet]:
         pass
-        
+
     @abstractmethod
     def save(self, outlet: Outlet) -> None:
         pass
@@ -38,7 +38,7 @@ class IProductRepository(ABC):
     @abstractmethod
     def get_many(self, product_ids: list[uuid.UUID]) -> list[Product]:
         pass
-        
+
     @abstractmethod
     def save(self, product: Product) -> None:
         pass

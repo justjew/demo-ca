@@ -27,7 +27,7 @@ class Company(Entity):
         for level in sorted_levels:
             if total_spent >= level.min_spent_amount:
                 return level.accrual_rate
-        
+
         # If below all levels, return the lowest level's rate or a default
         # Assuming we want to return the minimum configured rate if they haven't reached any level
         return 0.05

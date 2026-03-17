@@ -1,9 +1,11 @@
+import uuid
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
-import uuid
 
 from adapters.db.django_orm.models import CompanyModel, OutletModel
+
 
 @pytest.fixture
 def api_client():
@@ -18,10 +20,10 @@ def test_catalog_outlet_list(api_client):
         name="Web Outlet",
         is_accepting_orders=True
     )
-    
+
     url = reverse('catalog-outlets-list', kwargs={'company_id': str(company.id)})
     response = api_client.get(url)
-    
+
     assert response.status_code == 200
     assert len(response.data) == 1
     assert response.data[0]['name'] == "Web Outlet"

@@ -1,6 +1,7 @@
 import uuid
-from typing import Callable, Any
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 from ..events import LoyaltyPointsAccruedEvent
 from ..interfaces.repositories import (
@@ -37,11 +38,11 @@ class CalculateAccrualUseCase:
         profile = self.client_repo.get_loyalty_profile(order.client_id, order.outlet_id)
         if not profile:
             return
-            
+
         company = self.company_repo.get_by_id(profile.company_id) # Using profile's reference or resolving via outlet
         if not company:
             return
-            
+
         if order.total_amount is None:
             return
 

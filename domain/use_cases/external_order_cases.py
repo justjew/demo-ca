@@ -1,11 +1,11 @@
-import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Any
+from typing import Any
 
 from ..entities.order import Order
 from ..events import OrderCreatedEvent
-from ..interfaces.repositories import IOrderRepository, IOutletRepository
 from ..interfaces.gateways import IExternalOrderGateway
+from ..interfaces.repositories import IOrderRepository, IOutletRepository
 
 
 class AcceptExternalOrderUseCase:
@@ -38,7 +38,7 @@ class AcceptExternalOrderUseCase:
 
         # Usually, aggregator orders are already "accepted" or "awaiting payment" but
         # here we just rely on whatever status the gateway set, or we default to CREATED.
-        
+
         self.order_repo.save(order)
 
         self.event_dispatcher(
