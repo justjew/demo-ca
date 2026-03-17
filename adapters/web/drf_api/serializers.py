@@ -51,3 +51,21 @@ class OrderResponseSerializer(serializers.Serializer):
 class ChangeOrderStatusRequestSerializer(serializers.Serializer):
     order_id = serializers.UUIDField()
     new_status = serializers.CharField()
+
+class ModifierOptionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    price_amount = serializers.IntegerField()
+    price_currency = serializers.CharField(default="RUB")
+    is_available = serializers.BooleanField(default=True)
+
+class ModifierGroupSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    options = ModifierOptionSerializer(many=True)
+    is_required = serializers.BooleanField(default=False)
+    min_selections = serializers.IntegerField(default=0)
+    max_selections = serializers.IntegerField(default=1)
+
+class ConfigureModifiersRequestSerializer(serializers.Serializer):
+    group = ModifierGroupSerializer()

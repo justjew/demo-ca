@@ -11,6 +11,7 @@ from domain.value_objects import Address, DeliveryMethod, OrderStatus
 
 from .serializers import (
     ChangeOrderStatusRequestSerializer,
+    ConfigureModifiersRequestSerializer,
     CreateOrderRequestSerializer,
     OrderResponseSerializer,
 )
@@ -123,6 +124,7 @@ class CatalogStopListView(APIView):
         if not product_id_str or action not in ["add", "remove"]:
             return Response({"detail": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST)
 
+
         use_case = Container.get_manage_stop_list_use_case()
         try:
             if action == "add":
@@ -130,6 +132,69 @@ class CatalogStopListView(APIView):
             else:
                 use_case.remove_product_from_stop_list(uuid.UUID(outlet_id), uuid.UUID(product_id_str))
             return Response({"status": "Success"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class CatalogConfigureModifiersView(APIView):
+    def post(self, request, product_id):
+        serializer = ConfigureModifiersRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        group_data = serializer.validated_data["group"]
+        
+        from domain.entities.catalog import ModifierGroup, ModifierOption
+        from domain.value_objects import Money
+
+        options = [
+            ModifierOption(
+                id=opt["id"],
+                name=opt["name"],
+                price_adjustment=Money(amount=opt["price_amount"], currency=opt["price_currency"]),
+                is_available=opt["is_available"],
+            )
+            for opt in group_data["options"]
+        ]
+        
+        group = ModifierGroup(
+            id=group_data["id"],
+            name=group_data["name"],
+            options=options,
+            is_required=group_data["is_required"],
+            min_selections=group_data["min_selections"],
+            max_selections=group_data["max_selections"],
+        )
+
+        use_case = Container.get_configure_modifiers_use_case()
+        try:
+            use_case.add_modifier_group(uuid.UUID(product_id), group)
+            return Response({"status": "Success"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class ExternalOrderAcceptView(APIView):
+    def post(self, request):
+        use_case = Container.get_accept_external_order_use_case()
+        try:
+            order = use_case.execute(
+                payload=request.data,
+                current_dt=timezone.now()
+            )
+            response_serializer = OrderResponseSerializer(order)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class LoyaltyCalculateAccrualView(APIView):
+    def post(self, request, order_id):
+        use_case = Container.get_calculate_accrual_use_case()
+        try:
+            use_case.execute(order_id=uuid.UUID(order_id), current_dt=timezone.now())
+            return Response({"status": "Success"}, status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
